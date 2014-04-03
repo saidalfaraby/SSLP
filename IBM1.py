@@ -22,7 +22,7 @@ class IBM1(object):
         self.voc_e = set()
         self.voc_f = set()
 
-        for sent in p_sentences:
+        for sent in self.p_sentences:
             self.voc_e.update(sent.words_e)
             self.voc_f.update(sent.words_f)
 
