@@ -1,11 +1,12 @@
 from IBM1 import IBM1, Pair_sent
 import dill as pickle
 
+
 def viterbi(ibm1, sent):
-	t = ibm1.probabilities
+    t = ibm1.probabilities
     V = [{}]
     path = {}
- 
+
     # Initialize base cases (t == 0)
     for f in sent.words_f:
         V[0][f] = 1.0
@@ -14,17 +15,17 @@ def viterbi(ibm1, sent):
     for ie in range(1, len(sent.words_e)):
         V.append({})
         newpath = {}
- 
+
         for f in sent.words_f:
-            (prob, state) = max((V[ie-1][y0] * t[y][sent.words_e[ie]], y0) for y0 in sent.words_f)
+            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie], f], y0) for y0 in sent.words_f)
             V[ie][f] = prob
             newpath[f] = path[state] + [f]
- 
+
         # Don't need to remember the old paths
         path = newpath
 
     #print_dptable(V)
-    (prob, state) = max((V[t][y], y) for y in sent.words_f)
+    (prob, state) = max((V[ie][y], y) for y in sent.words_f)
     return (prob, path[state])
 
 if __name__ == '__main__':
@@ -32,8 +33,8 @@ if __name__ == '__main__':
     with open('IBM1.pickle', 'rb') as handle:
         ibm1 = pickle.load(handle)
 
-    key3 = ('transparency', 'transparantie')
-    print key3, ibm1.probabilities[key3]
+    # key3 = ('transparency', 'transparantie')
+    # print key3, ibm1.probabilities[key3]
 
     p_corp = []
     with open('corpus.en', 'rb') as corpus_en:
@@ -43,9 +44,11 @@ if __name__ == '__main__':
                 if len(p_corp) == 1:
                     break
 
-    for sent in p_corp:
+    sentences = []
+    for elem in p_corp:
+        sentences.append(Pair_sent(elem))
+
+    for sent in sentences:
     	prob, path = viterbi(ibm1, sent)
-    	print path
-
-
-    
+    	print sent.words_e, sent.words_f
+        print path
