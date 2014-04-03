@@ -1,5 +1,6 @@
 from __future__ import division
 from collections import defaultdict
+import numpy as np
 
 
 class p_sentence(object):
@@ -31,6 +32,7 @@ class IBM1(object):
         t = defaultdict(lambda: 1.0/len(self.voc_f))
         converged = False
         iteration = 0
+        perplexity_old = 10**200
 
         while not converged:
             print 'EM iteration %i' % iteration
@@ -39,6 +41,7 @@ class IBM1(object):
             total = defaultdict(float)
 
             # for every pair of sentences in the parallel corpus
+            # gather counts
             for sent in self.p_sentences:
                 total_s = {}
                 for e in sent.words_e:
@@ -49,19 +52,33 @@ class IBM1(object):
                     for f in sent.words_f:
                         count[e, f] += t[e, f]/total_s[e]
                         total[f] += t[e, f]/total_s[e]
-                        print total[f], count[e, f], t[e, f], total_s[e]
 
+            # normalize and get new t(e|f)
             for f in self.voc_f:
                 for e in self.voc_e:
-                    print f, e
                     t[e, f] = count[e, f] / total[f]
+
+            # have we converged?
+            perplexity = 0
+            for sent in self.p_sentences:
+                mult = 1
+                norm = 1/((len(sent.words_f) + 1) ** len(sent.words_e))
+                for e in sent.words_e:
+                    p_ = 0
+                    for f in sent.words_f:
+                        p_ += t[e, f]
+                    mult *= p_
+                perplexity += np.log2(norm * mult)
+            perplexity = - perplexity
+
+            if perplexity_old - perplexity < self.converge_thres:
+                converged = True
+            else:
+                perplexity_old = perplexity
 
             iteration += 1
             for key, value in t.iteritems():
                 print key, value
-
-            if iteration == 30:
-                break
 
 
 if __name__ == '__main__':
@@ -71,8 +88,8 @@ if __name__ == '__main__':
     for sentence in p_corp:
         p_sentences.append(p_sentence(sentence))
 
-    for p_sent in p_sentences:
-        print p_sent.words_e, p_sent.words_f
+    #for p_sent in p_sentences:
+    #    print p_sent.words_e, p_sent.words_f
 
-    ibm1 = IBM1(p_sentences, 1e-2)
+    ibm1 = IBM1(p_sentences, 1e-3)
     ibm1.train()
