@@ -30,6 +30,7 @@ class IBM1(object):
 
     def train(self):
         t = defaultdict(lambda: 1.0/len(self.voc_f))
+        #print 'Initial probabilities: %f' % (1.0/len(self.voc_f))
         converged = False
         iteration = 0
         perplexity_old = 10**200
@@ -39,7 +40,6 @@ class IBM1(object):
             # init count(e|f) and total(f)
             count = defaultdict(float)
             total = defaultdict(float)
-
             # for every pair of sentences in the parallel corpus
             # gather counts
             for sent in self.p_sentences:
@@ -70,6 +70,7 @@ class IBM1(object):
                     mult *= p_
                 perplexity += np.log2(norm * mult)
             perplexity = - perplexity
+            print 'Perplexity: %f' % perplexity
 
             if perplexity_old - perplexity < self.converge_thres:
                 converged = True
@@ -82,7 +83,8 @@ class IBM1(object):
 
 
 if __name__ == '__main__':
-    p_corp = [(['blue', 'house'], ['maison', 'bleu']), (['house'], ['maison'])]
+    #p_corp = [(['blue', 'house'], ['maison', 'bleu']), (['house'], ['maison'])]
+    p_corp = [(['the', 'house'], ['das', 'haus']), (['the', 'book'], ['das', 'buch']), (['a', 'book'], ['ein', 'buch'])]
 
     p_sentences = []
     for sentence in p_corp:
