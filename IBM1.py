@@ -27,7 +27,7 @@ class IBM1(object):
             self.voc_e.update(sent.words_e)
             self.voc_f.update(sent.words_f)
 
-        #self.voc_f.add(None)
+        self.voc_f.add(None)
 
     def train(self):
         t = defaultdict(lambda: 1.0/len(self.voc_f))
@@ -48,10 +48,10 @@ class IBM1(object):
                 total_s = {}
                 for e in sent.words_e:
                     total_s[e] = 0
-                    for f in sent.words_f:
+                    for f in sent.words_f+[None]:
                         total_s[e] += t[e, f]
                 for e in sent.words_e:
-                    for f in sent.words_f:
+                    for f in sent.words_f+[None]:
                         count[e, f] += t[e, f]/total_s[e]
                         total[f] += t[e, f]/total_s[e]
 
@@ -68,7 +68,7 @@ class IBM1(object):
                 norm = 1/((len(sent.words_f) + 1) ** len(sent.words_e))
                 for e in sent.words_e:
                     p_ = 0
-                    for f in sent.words_f:
+                    for f in sent.words_f+[None]:
                         p_ += t[e, f]
                     mult *= p_
                 perplexity += np.log2(norm * mult)
