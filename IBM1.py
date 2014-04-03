@@ -74,12 +74,13 @@ class IBM1(object):
 
             if perplexity_old - perplexity < self.converge_thres:
                 converged = True
+                self.probabilities = t
             else:
                 perplexity_old = perplexity
 
             iteration += 1
-            for key, value in t.iteritems():
-                print key, value
+            # for key, value in t.iteritems():
+            #     print key, value
 
 
 if __name__ == '__main__':
@@ -95,3 +96,6 @@ if __name__ == '__main__':
 
     ibm1 = IBM1(p_sentences, 1e-3)
     ibm1.train()
+
+    for key, value in ibm1.probabilities.iteritems():
+        print key, value
