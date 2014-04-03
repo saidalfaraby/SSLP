@@ -38,16 +38,18 @@ class IBM1(object):
             count = defaultdict(float)
             total = defaultdict(float)
 
+            # for every pair of sentences in the parallel corpus
             for sent in self.p_sentences:
+                total_s = {}
                 for e in sent.words_e:
-                    total_s = 0
+                    total_s[e] = 0
                     for f in sent.words_f:
-                        total_s += t[e, f]
+                        total_s[e] += t[e, f]
                 for e in sent.words_e:
                     for f in sent.words_f:
-                        count[e, f] += t[e, f]/total_s
-                        total[f] += t[e, f]/total_s
-                        print total[f], count[e, f], t[e, f], total_s
+                        count[e, f] += t[e, f]/total_s[e]
+                        total[f] += t[e, f]/total_s[e]
+                        print total[f], count[e, f], t[e, f], total_s[e]
 
             for f in self.voc_f:
                 for e in self.voc_e:
@@ -58,7 +60,7 @@ class IBM1(object):
             for key, value in t.iteritems():
                 print key, value
 
-            if iteration == 15:
+            if iteration == 30:
                 break
 
 
