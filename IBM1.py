@@ -92,8 +92,9 @@ class IBM1(object):
             # M - Step
             # t = {key: value for (key, value) in zip([(e, f) for f in self.voc_f for e in self.voc_e], [count[e, f]/total[f] for f in self.voc_f for e in self.voc_e])}
             for f in self.voc_f:
-                for e in self.voc_e:
-                    t[self.dict_e[e], self.dict_f[f]] = count[self.dict_e[e], self.dict_f[f]] / total[f]
+                t[:, self.dict_f[f]] = count[:, self.dict_f[f]] / total[f]
+                # for e in self.voc_e:
+                #     t[self.dict_e[e], self.dict_f[f]] = count[self.dict_e[e], self.dict_f[f]] / total[f]
 
             print 'Finished M-step'
             # have we converged?
