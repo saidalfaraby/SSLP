@@ -2,6 +2,42 @@ from __future__ import division
 from collections import defaultdict
 import numpy as np
 import dill as pickle
+import os,os.path,UserDict
+from sqlite3 import dbapi2 as sqlite
+
+
+class dbdict(UserDict.DictMixin):
+    ''' dbdict, a dictionnary-like object for large datasets (several Tera-bytes) '''
+
+    def __init__(self, dictName):
+        self.db_filename = "dbdict_%s.sqlite" % dictName
+        if not os.path.isfile(self.db_filename):
+            self.con = sqlite.connect(self.db_filename)
+            self.con.execute("create table data (key PRIMARY KEY,value)")
+        else:
+            self.con = sqlite.connect(self.db_filename)
+
+    def __getitem__(self, key):
+        row = self.con.execute("select value from data where key=?",(key,)).fetchone()
+        if not row: raise KeyError
+        return row[0]
+
+    def __setitem__(self, key, item):
+        if self.con.execute("select key from data where key=?",(key,)).fetchone():
+            self.con.execute("update data set value=? where key=?",(item,key))
+        else:
+            self.con.execute("insert into data (key,value) values (?,?)",(key, item))
+        self.con.commit()
+
+    def __delitem__(self, key):
+        if self.con.execute("select key from data where key=?",(key,)).fetchone():
+            self.con.execute("delete from data where key=?",(key,))
+            self.con.commit()
+        else:
+             raise KeyError
+
+    def keys(self):
+        return [row[0] for row in self.con.execute("select key from data").fetchall()]
 
 
 class Pair_sent(object):
@@ -30,7 +66,13 @@ class IBM1(object):
         self.voc_f.add(None)
 
     def train(self):
-        t = defaultdict(lambda: 1.0/len(self.voc_f))
+        t = dbdict("prob_table")
+        # t = defaultdict(lambda: 1.0/len(self.voc_f))
+        # t = {}
+        for e in self.voc_e:
+            for f in self.voc_f:
+                t[str((e, f))] = 1.0/len(self.voc_f)
+        print 'Finished creating.'
         #print 'Initial probabilities: %f' % (1.0/len(self.voc_f))
         converged = False
         iteration = 0
@@ -48,20 +90,20 @@ class IBM1(object):
             # E - Step
             for sent in self.p_sentences:
                 # total_s = {}
-                total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[e, f] for f in sent.words_f+[None]]) for e in sent.words_e])}
+                total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[str((e, f))] for f in sent.words_f+[None]]) for e in sent.words_e])}
                 # for e in sent.words_e:
                 #     total_s[e] = sum([t[e, f] for f in sent.words_f+[None]])
                 for e in sent.words_e:
                     for f in sent.words_f+[None]:
-                        count[e, f] += t[e, f]/total_s[e]
-                        total[f] += t[e, f]/total_s[e]
+                        count[e, f] += t[str((e, f))]/total_s[e]
+                        total[f] += t[str((e, f))]/total_s[e]
 
             # normalize and get new t(e|f)
             # M - Step
             # t = {key: value for (key, value) in zip([(e, f) for f in self.voc_f for e in self.voc_e], [count[e, f]/total[f] for f in self.voc_f for e in self.voc_e])}
             for f in self.voc_f:
                 for e in self.voc_e:
-                    t[e, f] = count[e, f] / total[f]
+                    t[str((e, f))] = count[e, f] / total[f]
 
             # have we converged?
             perplexity = 0
@@ -69,7 +111,7 @@ class IBM1(object):
                 mult = 1
                 norm = 1/((len(sent.words_f) + 1) ** len(sent.words_e))
                 for e in sent.words_e:
-                    p_ = sum([t[e, f] for f in sent.words_f+[None]])
+                    p_ = sum([t[str((e, f))] for f in sent.words_f+[None]])
                     # for f in sent.words_f+[None]:
                     #     p_ += t[e, f]
                     mult *= p_
