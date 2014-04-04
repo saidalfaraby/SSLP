@@ -60,12 +60,14 @@ class IBM1(object):
 
                 total_s = {key: value for (key, value) in zip(e_w, [np.sum(t[i, f_w]) for i in e_w])}
 
-                # since we may have the same word twice
-                # we need to do it per element
                 for i in e_w:
-                    for j in f_w:
-                        count[i, j] += t[i, j]/total_s[i]
-                        total[j] += t[i, j]/total_s[i]
+                    # use bincount to find duplicates and do the
+                    # assignments accordingly
+                    f_w_bin = np.bincount(f_w)
+                    unique = np.unique(f_w)
+                    f_w_bin = f_w_bin[unique]
+                    count[i, unique] += f_w_bin * t[i, unique]/total_s[i]
+                    total[unique] += f_w_bin * t[i, unique]/total_s[i]
 
             print 'Finished E-step'
 
