@@ -2,42 +2,7 @@ from __future__ import division
 from collections import defaultdict
 import numpy as np
 import dill as pickle
-import os,os.path,UserDict
-from sqlite3 import dbapi2 as sqlite
-
-
-class dbdict(UserDict.DictMixin):
-    ''' dbdict, a dictionnary-like object for large datasets (several Tera-bytes) '''
-
-    def __init__(self, dictName):
-        self.db_filename = "dbdict_%s.sqlite" % dictName
-        if not os.path.isfile(self.db_filename):
-            self.con = sqlite.connect(self.db_filename)
-            self.con.execute("create table data (key PRIMARY KEY,value)")
-        else:
-            self.con = sqlite.connect(self.db_filename)
-
-    def __getitem__(self, key):
-        row = self.con.execute("select value from data where key=?",(key,)).fetchone()
-        if not row: raise KeyError
-        return row[0]
-
-    def __setitem__(self, key, item):
-        if self.con.execute("select key from data where key=?",(key,)).fetchone():
-            self.con.execute("update data set value=? where key=?",(item,key))
-        else:
-            self.con.execute("insert into data (key,value) values (?,?)",(key, item))
-        self.con.commit()
-
-    def __delitem__(self, key):
-        if self.con.execute("select key from data where key=?",(key,)).fetchone():
-            self.con.execute("delete from data where key=?",(key,))
-            self.con.commit()
-        else:
-             raise KeyError
-
-    def keys(self):
-        return [row[0] for row in self.con.execute("select key from data").fetchall()]
+import shelve
 
 
 class Pair_sent(object):
@@ -54,6 +19,7 @@ class IBM1(object):
         self.converge_thres = converge_thres
         self.probabilities = None
         self._generate_voc()
+        self._generate_dict_ind()
 
     def _generate_voc(self):
         self.voc_e = set()
@@ -64,14 +30,34 @@ class IBM1(object):
             self.voc_f.update(sent.words_f)
 
         self.voc_f.add(None)
+        self.voc_e = list(self.voc_e)
+        self.voc_f = list(self.voc_f)
+
+    def _generate_dict_ind(self):
+        # self.dict_e = shelve.open('e_to_id.shelf')
+        # for i in xrange(len(self.voc_e)):
+        #     self.dict_e[self.voc_e[i]] = i
+        # self.dict_f = shelve.open('f_to_id.shelf')
+        # for i in xrange(len(self.voc_f)):
+        #     self.dict_f[self.voc_f[i]] = i
+        self.dict_e = {key: value for (key, value) in zip(self.voc_e, range(len(self.voc_e)))}
+        self.dict_f = {key: value for (key, value) in zip(self.voc_f, range(len(self.voc_f)))}
 
     def train(self):
-        t = dbdict("prob_table")
+        # import shelve
+        #t = anydbm.open('prob_table', 'c')
+        #t = shelve.open('prob_table.shelf')
+        #t = dbdict("prob_table")
         # t = defaultdict(lambda: 1.0/len(self.voc_f))
         # t = {}
-        for e in self.voc_e:
-            for f in self.voc_f:
-                t[str((e, f))] = 1.0/len(self.voc_f)
+        t = np.ones((len(self.voc_e), len(self.voc_f))) * (1.0/len(self.voc_f))
+        # i = 0
+        # n = len(self.voc_e) * len(self.voc_f)
+        # for e in self.voc_e:
+        #     for f in self.voc_f:
+        #         print str(i)+' of '+str(n)
+        #         i += 1
+        #         t[str((e, f))] = 1.0/len(self.voc_f)
         print 'Finished creating.'
         #print 'Initial probabilities: %f' % (1.0/len(self.voc_f))
         converged = False
@@ -90,20 +76,20 @@ class IBM1(object):
             # E - Step
             for sent in self.p_sentences:
                 # total_s = {}
-                total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[str((e, f))] for f in sent.words_f+[None]]) for e in sent.words_e])}
+                total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[self.dict_e[e], self.dict_f[f]] for f in sent.words_f+[None]]) for e in sent.words_e])}
                 # for e in sent.words_e:
                 #     total_s[e] = sum([t[e, f] for f in sent.words_f+[None]])
                 for e in sent.words_e:
                     for f in sent.words_f+[None]:
-                        count[e, f] += t[str((e, f))]/total_s[e]
-                        total[f] += t[str((e, f))]/total_s[e]
+                        count[e, f] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
+                        total[f] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
 
             # normalize and get new t(e|f)
             # M - Step
             # t = {key: value for (key, value) in zip([(e, f) for f in self.voc_f for e in self.voc_e], [count[e, f]/total[f] for f in self.voc_f for e in self.voc_e])}
             for f in self.voc_f:
                 for e in self.voc_e:
-                    t[str((e, f))] = count[e, f] / total[f]
+                    t[self.dict_e[e], self.dict_f[f]] = count[e, f] / total[f]
 
             # have we converged?
             perplexity = 0
@@ -111,7 +97,7 @@ class IBM1(object):
                 mult = 1
                 norm = 1/((len(sent.words_f) + 1) ** len(sent.words_e))
                 for e in sent.words_e:
-                    p_ = sum([t[str((e, f))] for f in sent.words_f+[None]])
+                    p_ = sum([t[self.dict_e[e], self.dict_f[f]] for f in sent.words_f+[None]])
                     # for f in sent.words_f+[None]:
                     #     p_ += t[e, f]
                     mult *= p_
@@ -153,14 +139,14 @@ if __name__ == '__main__':
     ibm1 = IBM1(p_sentences, 1e-1)
     ibm1.train()
 
-    with open('IBM1.pickle', 'wb') as handle:
+    with open('IBM1_trained.pickle', 'wb') as handle:
         pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
-    print key, ibm1.probabilities[key]
-    key2 = ('these', 'deze')
-    print key2, ibm1.probabilities[key2]
-    key3 = ('transparency', 'transparantie')
-    print key3, ibm1.probabilities[key3]
+    print key, ibm1.probabilities[ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]]
+    # key2 = ('these', 'deze')
+    # print key2, ibm1.probabilities[key2]
+    # key3 = ('transparency', 'transparantie')
+    # print key3, ibm1.probabilities[key3]
     #for key, value in ibm1.probabilities.iteritems():
     #    print key, value
