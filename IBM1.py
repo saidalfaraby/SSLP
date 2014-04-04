@@ -64,35 +64,65 @@ class IBM1(object):
         iteration = 0
         perplexity_old = 10**200
         #count = defaultdict(float)
-        count = np.zeros((len(self.voc_e), len(self.voc_f)))
-        total = defaultdict(float)
+        # count = np.zeros((len(self.voc_e), len(self.voc_f)), dtype=float)
+        # total = np.zeros(len(self.voc_f), dtype=float)
+        # total = defaultdict(float)
 
         while not converged:
             print 'EM iteration %i' % iteration
             # init count(e|f) and total(f)
             # count.clear()
             count = np.zeros((len(self.voc_e), len(self.voc_f)))
-            total.clear()
+            total = np.zeros(len(self.voc_f))
+            # total.clear()
             # for every pair of sentences in the parallel corpus
             # gather counts
             # E - Step
             print 'Starting E-step'
+            # snes = self.p_sentences
             for sent in self.p_sentences:
+                e_w = np.asarray([self.dict_e[e] for e in sent.words_e])
+                f_w = np.asarray([self.dict_f[f] for f in sent.words_f+[None]])
+                # print len(sent.words_f)
+                # print f_w.shape
                 # total_s = {}
-                total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[self.dict_e[e], self.dict_f[f]] for f in sent.words_f+[None]]) for e in sent.words_e])}
+                # print t[e_w[0], f_w], np.sum(t[e_w[0], f_w])
+                # break
+                total_s = {key: value for (key, value) in zip(e_w, [np.sum(t[i, f_w]) for i in e_w])}
+                # print total_s
+                # print e_w
+                # print sent.words_e
+                # print total_s
+
+                # total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[self.dict_e[e], self.dict_f[f]] for f in sent.words_f+[None]]) for e in sent.words_e])}
+                # print total_s
+                # print sent.words_e
+                # print e_w
                 # for e in sent.words_e:
                 #     total_s[e] = sum([t[e, f] for f in sent.words_f+[None]])
-                for e in sent.words_e:
-                    for f in sent.words_f+[None]:
-                        count[self.dict_e[e], self.dict_f[f]] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
-                        total[f] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
+                # for i in e_w:
+                #     count[i, f_w] += t[i, f_w]/total_s[i]
+                #     total[f_w] += t[i, f_w]/total_s[i]
+                for i in e_w:
+                    for j in f_w:
+                        count[i, j] += t[i, j]/total_s[i]
+                        total[j] += t[i, j]/total_s[i]
+                # print total[f_w]
+                # print f_w
+                # print sent.words_f
+                    # for f in sent.words_f+[None]:
+                        # count[self.dict_e[e], self.dict_f[f]] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
+                        # total[f] += t[self.dict_e[e], self.dict_f[f]]/total_s[i]
             print 'Finished E-step'
             print 'Starting M-step'
             # normalize and get new t(e|f)
             # M - Step
             # t = {key: value for (key, value) in zip([(e, f) for f in self.voc_f for e in self.voc_e], [count[e, f]/total[f] for f in self.voc_f for e in self.voc_e])}
-            for f in self.voc_f:
-                t[:, self.dict_f[f]] = count[:, self.dict_f[f]] / total[f]
+            # for f in self.voc_f:
+            #print total.shape
+            f_w = [self.dict_f[i] for i in self.voc_f]
+            for f in f_w:
+                t[:, f] = count[:, f] / total[f]
                 # for e in self.voc_e:
                 #     t[self.dict_e[e], self.dict_f[f]] = count[self.dict_e[e], self.dict_f[f]] / total[f]
 
@@ -150,9 +180,9 @@ if __name__ == '__main__':
 
     key = ('this', 'deze')
     print key, ibm1.probabilities[ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]]
-    # key2 = ('these', 'deze')
-    # print key2, ibm1.probabilities[key2]
-    # key3 = ('transparency', 'transparantie')
-    # print key3, ibm1.probabilities[key3]
-    #for key, value in ibm1.probabilities.iteritems():
+    key2 = ('these', 'deze')
+    print key2, ibm1.probabilities[ibm1.dict_e[key2[0]], ibm1.dict_f[key2[1]]]
+    key3 = ('transparency', 'transparantie')
+    print key3, ibm1.probabilities[ibm1.dict_e[key3[0]], ibm1.dict_f[key3[1]]]
+    # for key, value in ibm1.probabilities.iteritems():
     #    print key, value
