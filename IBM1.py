@@ -120,7 +120,6 @@ if __name__ == '__main__':
     p_sentences = []
     for sentence in p_corp:
         p_sentences.append(Pair_sent(sentence))
-    print len(p_sentences)
 
     ibm1 = IBM1(p_sentences, 1e-1)
     ibm1.train()
