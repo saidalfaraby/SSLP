@@ -1,5 +1,5 @@
 from IBM1 import IBM1, Pair_sent
-import dill as pickle
+import cPickle as pickle
 
 
 def viterbi(ibm1, sent):
@@ -17,7 +17,7 @@ def viterbi(ibm1, sent):
         newpath = {}
 
         for f in sent.words_f:
-            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f], y0) for y0 in sent.words_f)
+            (prob, state) = max((V[ie-1][y0] * t[ibm1.dict_e[sent.words_e[ie-1]], ibm1.dict_f[f]], y0) for y0 in sent.words_f)
             V[ie][f] = prob
             newpath[f] = path[state] + [f]
 
@@ -28,19 +28,21 @@ def viterbi(ibm1, sent):
     (prob, state) = max((V[ie][y], y) for y in sent.words_f)
     return (prob, path[state])
 
+
 def simpleMax(ibm1, sent):
     t = ibm1.probabilities
     prob = 1.0
     path = []
     for e in sent.words_e:
-        newprob, state = max((t[e, f], f) for f in sent.words_f)
+        newprob, state = max((t[ibm1.dict_e[e], ibm1.dict_f[f]], f) for f in sent.words_f)
         prob *= newprob
         path.append(state)
     return (prob, path)
 
+
 if __name__ == '__main__':
 
-    with open('IBM1.pickle', 'rb') as handle:
+    with open('IBM1_trained.pickle', 'rb') as handle:
         ibm1 = pickle.load(handle)
 
     # key3 = ('transparency', 'transparantie')
@@ -60,8 +62,8 @@ if __name__ == '__main__':
 
     print 'viterbi'
     for sent in sentences:
-    	prob, path = viterbi(ibm1, sent)
-    	print sent.words_e, sent.words_f
+        prob, path = viterbi(ibm1, sent)
+        print sent.words_e, sent.words_f
         print path
         print prob
 
