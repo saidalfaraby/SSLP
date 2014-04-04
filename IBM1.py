@@ -76,6 +76,7 @@ class IBM1(object):
             # for every pair of sentences in the parallel corpus
             # gather counts
             # E - Step
+            print 'Starting E-step'
             for sent in self.p_sentences:
                 # total_s = {}
                 total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[self.dict_e[e], self.dict_f[f]] for f in sent.words_f+[None]]) for e in sent.words_e])}
@@ -85,7 +86,8 @@ class IBM1(object):
                     for f in sent.words_f+[None]:
                         count[self.dict_e[e], self.dict_f[f]] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
                         total[f] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
-
+            print 'Finished E-step'
+            print 'Starting M-step'
             # normalize and get new t(e|f)
             # M - Step
             # t = {key: value for (key, value) in zip([(e, f) for f in self.voc_f for e in self.voc_e], [count[e, f]/total[f] for f in self.voc_f for e in self.voc_e])}
@@ -93,6 +95,7 @@ class IBM1(object):
                 for e in self.voc_e:
                     t[self.dict_e[e], self.dict_f[f]] = count[self.dict_e[e], self.dict_f[f]] / total[f]
 
+            print 'Finished M-step'
             # have we converged?
             perplexity = 0
             for sent in self.p_sentences:
