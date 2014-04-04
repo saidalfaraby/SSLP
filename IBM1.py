@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 import cPickle as pickle
+import sys
 
 
 class Pair_sent(object):
@@ -102,18 +103,24 @@ class IBM1(object):
 if __name__ == '__main__':
     #p_corp = [(['blue', 'house'], ['maison', 'bleu']), (['house'], ['maison'])]
     #p_corp = [(['the', 'house'], ['das', 'haus']), (['the', 'book'], ['das', 'buch']), (['a', 'book'], ['ein', 'buch'])]
+    n_p_sent = 'all'
+    if len(sys.argv) > 1:
+        n_p_sent = int(sys.argv[1])
 
+    print 'Training for ' + str(n_p_sent) + ' sentences...'
     p_corp = []
     with open('corpus.en', 'rb') as corpus_en:
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
                 p_corp.append((line_en.split(), line_nl.split()))
-                if len(p_corp) == 30:
-                    break
+                if n_p_sent is not 'all':
+                    if len(p_corp) == n_p_sent:
+                        break
 
     p_sentences = []
     for sentence in p_corp:
         p_sentences.append(Pair_sent(sentence))
+    print len(p_sentences)
 
     ibm1 = IBM1(p_sentences, 1e-1)
     ibm1.train()
