@@ -63,13 +63,15 @@ class IBM1(object):
         converged = False
         iteration = 0
         perplexity_old = 10**200
-        count = defaultdict(float)
+        #count = defaultdict(float)
+        count = np.zeros((len(self.voc_e), len(self.voc_f)))
         total = defaultdict(float)
 
         while not converged:
             print 'EM iteration %i' % iteration
             # init count(e|f) and total(f)
-            count.clear()
+            # count.clear()
+            count = np.zeros((len(self.voc_e), len(self.voc_f)))
             total.clear()
             # for every pair of sentences in the parallel corpus
             # gather counts
@@ -81,7 +83,7 @@ class IBM1(object):
                 #     total_s[e] = sum([t[e, f] for f in sent.words_f+[None]])
                 for e in sent.words_e:
                     for f in sent.words_f+[None]:
-                        count[e, f] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
+                        count[self.dict_e[e], self.dict_f[f]] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
                         total[f] += t[self.dict_e[e], self.dict_f[f]]/total_s[e]
 
             # normalize and get new t(e|f)
@@ -89,7 +91,7 @@ class IBM1(object):
             # t = {key: value for (key, value) in zip([(e, f) for f in self.voc_f for e in self.voc_e], [count[e, f]/total[f] for f in self.voc_f for e in self.voc_e])}
             for f in self.voc_f:
                 for e in self.voc_e:
-                    t[self.dict_e[e], self.dict_f[f]] = count[e, f] / total[f]
+                    t[self.dict_e[e], self.dict_f[f]] = count[self.dict_e[e], self.dict_f[f]] / total[f]
 
             # have we converged?
             perplexity = 0
