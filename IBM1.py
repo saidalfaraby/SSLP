@@ -72,7 +72,6 @@ class IBM1(object):
             # normalize and get new t(e|f)
             # M - Step
             print 'Starting M-step'
-            f_w = [self.dict_f[i] for i in self.voc_f]
             t = count / total
 
             print 'Finished M-step'
