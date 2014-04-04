@@ -73,8 +73,7 @@ class IBM1(object):
             # M - Step
             print 'Starting M-step'
             f_w = [self.dict_f[i] for i in self.voc_f]
-            for f in f_w:
-                t[:, f] = count[:, f] / total[f]
+            t = count / total
 
             print 'Finished M-step'
 
