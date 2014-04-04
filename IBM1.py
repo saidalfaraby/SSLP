@@ -35,21 +35,22 @@ class IBM1(object):
         converged = False
         iteration = 0
         perplexity_old = 10**200
+        count = defaultdict(float)
+        total = defaultdict(float)
 
         while not converged:
             print 'EM iteration %i' % iteration
             # init count(e|f) and total(f)
-            count = defaultdict(float)
-            total = defaultdict(float)
+            count.clear()
+            total.clear()
             # for every pair of sentences in the parallel corpus
             # gather counts
             # E - Step
             for sent in self.p_sentences:
-                total_s = {}
-                for e in sent.words_e:
-                    total_s[e] = 0
-                    for f in sent.words_f+[None]:
-                        total_s[e] += t[e, f]
+                # total_s = {}
+                total_s = {key: value for (key, value) in zip(sent.words_e, [sum([t[e, f] for f in sent.words_f+[None]]) for e in sent.words_e])}
+                # for e in sent.words_e:
+                #     total_s[e] = sum([t[e, f] for f in sent.words_f+[None]])
                 for e in sent.words_e:
                     for f in sent.words_f+[None]:
                         count[e, f] += t[e, f]/total_s[e]
@@ -57,6 +58,7 @@ class IBM1(object):
 
             # normalize and get new t(e|f)
             # M - Step
+            # t = {key: value for (key, value) in zip([(e, f) for f in self.voc_f for e in self.voc_e], [count[e, f]/total[f] for f in self.voc_f for e in self.voc_e])}
             for f in self.voc_f:
                 for e in self.voc_e:
                     t[e, f] = count[e, f] / total[f]
@@ -67,9 +69,9 @@ class IBM1(object):
                 mult = 1
                 norm = 1/((len(sent.words_f) + 1) ** len(sent.words_e))
                 for e in sent.words_e:
-                    p_ = 0
-                    for f in sent.words_f+[None]:
-                        p_ += t[e, f]
+                    p_ = sum([t[e, f] for f in sent.words_f+[None]])
+                    # for f in sent.words_f+[None]:
+                    #     p_ += t[e, f]
                     mult *= p_
                 perplexity += np.log2(norm * mult)
             perplexity = - perplexity
