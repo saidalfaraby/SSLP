@@ -13,12 +13,20 @@ class Pair_sent(object):
 
 class IBM1(object):
 
-    def __init__(self, p_sentences, converge_thres):
-        self.p_sentences = p_sentences
+    def __init__(self, p_sentences=None, converge_thres=1e-1):
+        if p_sentences is not None:
+            self.p_sentences = p_sentences
         self.converge_thres = converge_thres
         self.probabilities = None
         self._generate_voc()
         self._generate_dict_ind()
+
+    def set_probabilities(self, probabilities):
+        self.probabilities = probabilities
+
+    def set_w2id(self, w_e_2id, w_f_2id):
+        self.dict_e = w_e_2id
+        self.dict_f = w_f_2id
 
     def _generate_voc(self):
         self.voc_e = set()
@@ -121,11 +129,18 @@ if __name__ == '__main__':
     for sentence in p_corp:
         p_sentences.append(Pair_sent(sentence))
 
-    ibm1 = IBM1(p_sentences, 1e-1)
+    ibm1 = IBM1(p_sentences=p_sentences, converge_thres=1e-1)
     ibm1.train()
 
-    with open('IBM1_trained.pickle', 'wb') as handle:
-        pickle.dump(ibm1, handle)
+    # save the model
+    np.savetxt('trained_ibm1.txt', ibm1.probabilities, delimiter=',')
+    with open('en_2id.pickle', 'wb') as handle:
+        pickle.dump(ibm1.dict_e, handle)
+    with open('nl_2id.pickle', 'wb') as handle:
+        pickle.dump(ibm1.dict_f, handle)
+
+    # with open('IBM1_trained.pickle', 'wb') as handle:
+    #     pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
     print ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]
