@@ -49,7 +49,7 @@ class IBM1(object):
         t = np.ones((len(self.voc_e), len(self.voc_f))) * (1.0/len(self.voc_f))
         self.probabilities = t
         print 'Finished creating.'
-        converged = True
+        converged = False
         iteration = 0
         perplexity_old = 10**200
 
