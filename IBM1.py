@@ -16,10 +16,10 @@ class IBM1(object):
     def __init__(self, p_sentences=None, converge_thres=1e-1):
         if p_sentences is not None:
             self.p_sentences = p_sentences
+            self._generate_voc()
+            self._generate_dict_ind()
         self.converge_thres = converge_thres
         self.probabilities = None
-        self._generate_voc()
-        self._generate_dict_ind()
 
     def set_probabilities(self, probabilities):
         self.probabilities = probabilities
