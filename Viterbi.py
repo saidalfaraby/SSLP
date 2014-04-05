@@ -49,11 +49,10 @@ if __name__ == '__main__':
     ibm1 = IBM1()
 
     with open('en_2id.pickle', 'rb') as handle:
-        ibm1.dict_e = pickle.load(handle)
-    with open('nl_2id.pickle', 'rb') as handle:
-        ibm1.dict_f = pickle.load(handle)
+        with open('nl_2id.pickle', 'rb') as handle2:
+            ibm1.set_w2id(pickle.load(handle), pickle.load(handle2))
 
-    ibm1.probabilities = np.loadtxt('trained_ibm1.txt', delimiter=',')
+    ibm1.set_probabilities(np.loadtxt('trained_ibm1.txt', delimiter=','))
 
     # key3 = ('transparency', 'transparantie')
     # print key3, ibm1.probabilities[key3]
