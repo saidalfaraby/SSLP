@@ -41,7 +41,7 @@ class IBM1(object):
         t = np.ones((len(self.voc_e), len(self.voc_f))) * (1.0/len(self.voc_f))
 
         print 'Finished creating.'
-        converged = False
+        converged = True
         iteration = 0
         perplexity_old = 10**200
 
