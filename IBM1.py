@@ -62,7 +62,7 @@ class IBM1(object):
             # for every pair of sentences in the parallel corpus
             # gather counts
             # E - Step
-            print 'Starting E-step'
+            print 'E-step...'
             for sent in self.p_sentences:
                 e_w = np.asarray([self.dict_e[e] for e in sent.words_e])
                 f_w = np.asarray([self.dict_f[f] for f in sent.words_f+[None]])
@@ -78,14 +78,10 @@ class IBM1(object):
                     count[i, unique] += f_w_bin * t[i, unique]/total_s[i]
                     total[unique] += f_w_bin * t[i, unique]/total_s[i]
 
-            print 'Finished E-step'
-
             # normalize and get new t(e|f)
             # M - Step
-            print 'Starting M-step'
+            print 'M-step...'
             t = count / total
-
-            print 'Finished M-step'
 
             # have we converged?
             perplexity = 0
@@ -101,6 +97,7 @@ class IBM1(object):
             if perplexity_old - perplexity < self.converge_thres:
                 converged = True
                 self.set_probabilities(t)
+                print 'Model converged.'
             else:
                 perplexity_old = perplexity
 
@@ -139,6 +136,7 @@ if __name__ == '__main__':
     # with open('nl_2id.pickle', 'wb') as handle:
     #     pickle.dump(ibm1.dict_f, handle)
 
+    print 'Saving the model to disk...'
     with open('IBM1_trained.pickle', 'wb') as handle:
         pickle.dump(ibm1, handle)
 
