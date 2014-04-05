@@ -128,6 +128,7 @@ if __name__ == '__main__':
         pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
+    print ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]
     print key, ibm1.probabilities[ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]]
     key2 = ('these', 'deze')
     print key2, ibm1.probabilities[ibm1.dict_e[key2[0]], ibm1.dict_f[key2[1]]]
