@@ -100,7 +100,7 @@ class IBM1(object):
 
             if perplexity_old - perplexity < self.converge_thres:
                 converged = True
-                self.probabilities = t
+                self.set_probabilities(t)
             else:
                 perplexity_old = perplexity
 
@@ -132,15 +132,15 @@ if __name__ == '__main__':
     ibm1 = IBM1(p_sentences=p_sentences, converge_thres=1e-1)
     ibm1.train()
 
-    # save the model
-    np.savetxt('trained_ibm1.txt', ibm1.probabilities, delimiter=',')
-    with open('en_2id.pickle', 'wb') as handle:
-        pickle.dump(ibm1.dict_e, handle)
-    with open('nl_2id.pickle', 'wb') as handle:
-        pickle.dump(ibm1.dict_f, handle)
+    # # save the model
+    # np.savetxt('trained_ibm1.txt', ibm1.probabilities, delimiter=',')
+    # with open('en_2id.pickle', 'wb') as handle:
+    #     pickle.dump(ibm1.dict_e, handle)
+    # with open('nl_2id.pickle', 'wb') as handle:
+    #     pickle.dump(ibm1.dict_f, handle)
 
-    # with open('IBM1_trained.pickle', 'wb') as handle:
-    #     pickle.dump(ibm1, handle)
+    with open('IBM1_trained.pickle', 'wb') as handle:
+        pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
     print ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]

@@ -43,16 +43,16 @@ def simpleMax(ibm1, sent):
 
 if __name__ == '__main__':
 
-    # with open('IBM1_trained.pickle', 'rb') as handle:
-    #     ibm1 = pickle.load(handle)
+    with open('IBM1_trained.pickle', 'rb') as handle:
+        ibm1 = pickle.load(handle)
 
-    ibm1 = IBM1()
+    # ibm1 = IBM1()
 
-    with open('en_2id.pickle', 'rb') as handle:
-        with open('nl_2id.pickle', 'rb') as handle2:
-            ibm1.set_w2id(pickle.load(handle), pickle.load(handle2))
+    # with open('en_2id.pickle', 'rb') as handle:
+    #     with open('nl_2id.pickle', 'rb') as handle2:
+    #         ibm1.set_w2id(pickle.load(handle), pickle.load(handle2))
 
-    ibm1.set_probabilities(np.loadtxt('trained_ibm1.txt', delimiter=','))
+    # ibm1.set_probabilities(np.loadtxt('trained_ibm1.txt', delimiter=','))
 
     # key3 = ('transparency', 'transparantie')
     # print key3, ibm1.probabilities[key3]
