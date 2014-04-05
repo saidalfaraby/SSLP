@@ -3,6 +3,7 @@ import numpy as np
 import cPickle as pickle
 import sys
 import multiprocessing as mpc
+import sharedmem as shm
 
 
 # helper function for pickling and parallelizing
@@ -56,6 +57,9 @@ class IBM1(object):
 
     def gather_counts(self, sentences, t):
 
+        # t = np.ctypeslib.as_array(t_ctypes)
+        # t.shape = shape
+
         count = np.zeros((len(self.voc_e), len(self.voc_f)))
         total = np.zeros(len(self.voc_f))
 
@@ -77,8 +81,18 @@ class IBM1(object):
         return count, total
 
     def train(self):
-        t = np.ones((len(self.voc_e), len(self.voc_f))) * (1.0/len(self.voc_f))
-        #self.probabilities = t
+
+        t = shm.empty((len(self.voc_e), len(self.voc_f)), np.float64)
+        t[:] = np.ones((len(self.voc_e), len(self.voc_f))) * (1.0/len(self.voc_f))
+        # t = (shm.zeros((len(self.voc_e), len(self.voc_f))) + 1) * (1.0/len(self.voc_f))
+
+        # size = t.size
+        # shape = t.shape
+        # t.shape = size
+        # t_ctypes = mpc.sharedctypes.RawArray('d', t)
+        # t = np.frombuffer(t_ctypes, dtype=np.float64, count=size)
+        # t.shape = shape
+
         print 'Finished creating.'
         converged = False
         iteration = 0
@@ -151,7 +165,7 @@ if __name__ == '__main__':
     for sentence in p_corp:
         p_sentences.append(Pair_sent(sentence))
 
-    ibm1 = IBM1(p_sentences=p_sentences, converge_thres=1e-1, num_proc=10)
+    ibm1 = IBM1(p_sentences=p_sentences, converge_thres=1e-1, num_proc=4)
     ibm1.train()
 
     # # save the model
