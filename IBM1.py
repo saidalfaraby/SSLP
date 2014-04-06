@@ -47,17 +47,17 @@ class IBM1(object):
     def train(self):
 
         t = np.ones((len(self.voc_e), len(self.voc_f))) * (1.0/len(self.voc_f))
-        self.probabilities = t
-        print 'Finished creating.'
+        print 'Starting EM...'
         converged = False
         iteration = 0
         perplexity_old = 10**200
 
+        # init count(e|f) and total(f)
+        count = np.zeros((len(self.voc_e), len(self.voc_f)))
+        total = np.zeros(len(self.voc_f))
+
         while not converged:
             print 'EM iteration %i' % iteration
-            # init count(e|f) and total(f)
-            count = np.zeros((len(self.voc_e), len(self.voc_f)))
-            total = np.zeros(len(self.voc_f))
 
             # for every pair of sentences in the parallel corpus
             # gather counts
@@ -88,7 +88,7 @@ class IBM1(object):
             for sent in self.p_sentences:
                 mult, norm = 1, 1/((len(sent.words_f) + 1) ** len(sent.words_e))
                 for e in sent.words_e:
-                    p_ = sum([t[self.dict_e[e], self.dict_f[f]] for f in sent.words_f+[None]])
+                    p_ = np.sum([t[self.dict_e[e], self.dict_f[f]] for f in sent.words_f+[None]])
                     mult *= p_
                 perplexity += np.log2(norm * mult)
             perplexity = - perplexity
@@ -102,6 +102,8 @@ class IBM1(object):
                 perplexity_old = perplexity
 
             iteration += 1
+            count[:] = 0
+            total[:] = 0
             print
 
 
@@ -141,7 +143,6 @@ if __name__ == '__main__':
         pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
-    print ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]
     print key, ibm1.probabilities[ibm1.dict_e[key[0]], ibm1.dict_f[key[1]]]
     key2 = ('these', 'deze')
     print key2, ibm1.probabilities[ibm1.dict_e[key2[0]], ibm1.dict_f[key2[1]]]
