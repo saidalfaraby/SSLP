@@ -45,6 +45,7 @@ class IBM1(object):
             # for every pair of sentences in the parallel corpus
             # gather counts
             # E - Step
+            print 'Doing E-Step...'
             for sent in self.p_sentences:
                 total_s = {}
                 for e in sent.words_e:
@@ -58,6 +59,7 @@ class IBM1(object):
 
             # normalize and get new t(e|f)
             # M - Step
+            print 'Doing M-Step...'
             for e in t.keys():
                 for f in t[e].keys():
                     t[e][f] = count[e, f] / total[f]
