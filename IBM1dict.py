@@ -97,6 +97,7 @@ if __name__ == '__main__':
         n_p_sent = int(sys.argv[1])
 
     p_corp = []
+    print 'Training for ' + str(n_p_sent) + ' sentences...'
     with open('corpus.en', 'rb') as corpus_en:
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
@@ -115,6 +116,7 @@ if __name__ == '__main__':
     ibm1 = IBM1(p_sentences, 1e-1)
     ibm1.train()
 
+    print 'Saving the model to disk...'
     with open('IBM1_trained_ef.pickle', 'wb') as handle:
         pickle.dump(ibm1, handle)
 
