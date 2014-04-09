@@ -2,6 +2,7 @@ from __future__ import division
 from collections import defaultdict
 import numpy as np
 import dill as pickle
+import sys
 
 
 class Pair_sent(object):
@@ -30,7 +31,7 @@ class IBM1(object):
         self.voc_f.add(None)
 
     def train(self):
-        t = defaultdict(lambda: defaultdict(lambda:1.0/len(self.voc_f)))
+        t = defaultdict(lambda: defaultdict(lambda: 1.0/len(self.voc_f)))
         #print 'Initial probabilities: %f' % (1.0/len(self.voc_f))
         converged = False
         iteration = 0
@@ -91,13 +92,18 @@ if __name__ == '__main__':
     #p_corp = [(['blue', 'house'], ['maison', 'bleu']), (['house'], ['maison'])]
     #p_corp = [(['the', 'house'], ['das', 'haus']), (['the', 'book'], ['das', 'buch']), (['a', 'book'], ['ein', 'buch'])]
 
+    n_p_sent = 'all'
+    if len(sys.argv) > 1:
+        n_p_sent = int(sys.argv[1])
+
     p_corp = []
     with open('corpus.en', 'rb') as corpus_en:
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
                 p_corp.append((line_en.split(), line_nl.split()))
-                if len(p_corp) == 30:
-                    break
+                if n_p_sent is not 'all':
+                    if len(p_corp) == n_p_sent:
+                        break
 
     p_sentences = []
     for sentence in p_corp:
@@ -109,7 +115,7 @@ if __name__ == '__main__':
     ibm1 = IBM1(p_sentences, 1e-1)
     ibm1.train()
 
-    with open('IBM1.pickle', 'wb') as handle:
+    with open('IBM1_trained_ef.pickle', 'wb') as handle:
         pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
