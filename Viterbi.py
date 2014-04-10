@@ -1,5 +1,5 @@
 from IBM1 import IBM1, Pair_sent
-import cPickle as pickle
+import dill as pickle
 import numpy as np
 
 
@@ -18,7 +18,7 @@ def viterbi(ibm1, sent):
         newpath = {}
 
         for f in sent.words_f:
-            (prob, state) = max((V[ie-1][y0] * t[ibm1.dict_e[sent.words_e[ie-1]], ibm1.dict_f[f]], y0) for y0 in sent.words_f)
+            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f], y0) for y0 in sent.words_f)
             V[ie][f] = prob
             newpath[f] = path[state] + [f]
 
@@ -35,7 +35,7 @@ def simpleMax(ibm1, sent):
     prob = 1.0
     path = []
     for e in sent.words_e:
-        newprob, state = max((t[ibm1.dict_e[e], ibm1.dict_f[f]], f) for f in sent.words_f)
+        newprob, state = max((t[e,f], f) for f in sent.words_f)
         prob *= newprob
         path.append(state)
     return (prob, path)
@@ -43,7 +43,7 @@ def simpleMax(ibm1, sent):
 
 if __name__ == '__main__':
 
-    with open('IBM1_trained.pickle', 'rb') as handle:
+    with open('IBM1_trained_fe.pickle', 'rb') as handle:
         ibm1 = pickle.load(handle)
 
     # ibm1 = IBM1()
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     with open('corpus.en', 'rb') as corpus_en:
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
-                p_corp.append((line_en.split(), line_nl.split()))
+                p_corp.append((line_nl.split(), line_en.split()+[None]))
                 if len(p_corp) == 1:
                     break
 
