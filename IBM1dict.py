@@ -14,11 +14,12 @@ class Pair_sent(object):
 
 class IBM1(object):
 
-    def __init__(self, p_sentences, converge_thres):
+    def __init__(self, p_sentences, converge_thres, num_iter=None):
         self.p_sentences = p_sentences
         self.converge_thres = converge_thres
         self.probabilities = None
         self._generate_voc()
+        self.num_iter = num_iter
 
     def _generate_voc(self):
         self.voc_e = set()
@@ -84,6 +85,10 @@ class IBM1(object):
             else:
                 perplexity_old = perplexity
 
+            if self.num_iter is not None:
+                if iteration == self.num_iter - 1:
+                    break
+
             iteration += 1
             print
             # for key, value in t.iteritems():
@@ -100,8 +105,8 @@ if __name__ == '__main__':
 
     p_corp = []
     print 'Training for ' + str(n_p_sent) + ' sentences...'
-    with open('corpus.en', 'rb') as corpus_en:
-        with open('corpus.nl', 'rb') as corpus_nl:
+    with open('corpus_1000.en', 'rb') as corpus_en:
+        with open('corpus_1000.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
                 p_corp.append((line_en.split(), line_nl.split()))
                 if n_p_sent is not 'all':
