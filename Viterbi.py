@@ -83,8 +83,7 @@ def parseGiza(filename):
                         words.append(parsed[i])
                         al.append(parsed[i+1])
                     for i in xrange(len(words)):
-                        num = re.findall('\d+\ | \d\d +', al[i], re.UNICODE)
-                        align[i] = map(int, num)
+                        align[i] = map(int, re.findall('\d+\ | \d\d +', al[i], re.UNICODE))
                     alignments.append(align)
                 else:
                     # print "line:" + str(aligned.strip('\n'))
