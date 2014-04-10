@@ -14,11 +14,12 @@ class Pair_sent(object):
 
 class IBM1(object):
 
-    def __init__(self, p_sentences, converge_thres):
+    def __init__(self, p_sentences, converge_thres, num_iter=None):
         self.p_sentences = p_sentences
         self.converge_thres = converge_thres
         self.probabilities = None
         self._generate_voc()
+        self.num_iter = num_iter
 
     def _generate_voc(self):
         self.voc_e = set()
@@ -31,8 +32,7 @@ class IBM1(object):
         self.voc_f.add(None)
 
     def train(self):
-        t = defaultdict(lambda: defaultdict(lambda: 1.0/len(self.voc_f)))
-        #print 'Initial probabilities: %f' % (1.0/len(self.voc_f))
+        t = defaultdict(lambda: 1.0/len(self.voc_f))
         converged = False
         iteration = 0
         perplexity_old = 10**200
@@ -45,22 +45,23 @@ class IBM1(object):
             # for every pair of sentences in the parallel corpus
             # gather counts
             # E - Step
+            print 'Doing E-Step...'
             for sent in self.p_sentences:
                 total_s = {}
                 for e in sent.words_e:
                     total_s[e] = 0
                     for f in sent.words_f+[None]:
-                        total_s[e] += t[e][f]
+                        total_s[e] += t[e, f]
                 for e in sent.words_e:
                     for f in sent.words_f+[None]:
-                        count[e, f] += t[e][f]/total_s[e]
-                        total[f] += t[e][f]/total_s[e]
+                        count[e, f] += t[e, f]/total_s[e]
+                        total[f] += t[e, f]/total_s[e]
 
             # normalize and get new t(e|f)
             # M - Step
-            for e in t.keys():
-                for f in t[e].keys():
-                    t[e][f] = count[e, f] / total[f]
+            print 'Doing M-Step...'
+            for e, f in t:
+                    t[e, f] = count[e, f] / total[f]
 
             # have we converged?
             perplexity = 0
@@ -70,7 +71,7 @@ class IBM1(object):
                 for e in sent.words_e:
                     p_ = 0
                     for f in sent.words_f+[None]:
-                        p_ += t[e][f]
+                        p_ += t[e, f]
                     mult *= p_
                 perplexity += np.log2(norm * mult)
             perplexity = - perplexity
@@ -81,6 +82,11 @@ class IBM1(object):
                 self.probabilities = t
             else:
                 perplexity_old = perplexity
+
+            if self.num_iter is not None:
+                if iteration == self.num_iter - 1:
+                    self.probabilities = t
+                    break
 
             iteration += 1
             print
@@ -110,10 +116,7 @@ if __name__ == '__main__':
     for sentence in p_corp:
         p_sentences.append(Pair_sent(sentence))
 
-    #for p_sent in p_sentences:
-    #    print p_sent.words_e, p_sent.words_f
-
-    ibm1 = IBM1(p_sentences, 1e-1)
+    ibm1 = IBM1(p_sentences, 1e-1, num_iter=20)
     ibm1.train()
 
     print 'Saving the model to disk...'
@@ -121,10 +124,8 @@ if __name__ == '__main__':
         pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
-    print key, ibm1.probabilities[key[0]][key[1]]
+    print key, ibm1.probabilities[key[0], key[1]]
     key = ('these', 'deze')
-    print key, ibm1.probabilities[key[0]][key[1]]
+    print key, ibm1.probabilities[key[0], key[1]]
     key = ('transparency', 'transparantie')
-    print key, ibm1.probabilities[key[0]][key[1]]
-    #for key, value in ibm1.probabilities.iteritems():
-    #    print key, value
+    print key, ibm1.probabilities[key[0], key[1]]
