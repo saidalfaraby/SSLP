@@ -38,7 +38,7 @@ class IBM1(object):
         perplexity_old = 10**200
 
         while not converged:
-            print 'EM iteration %i' % iteration
+            print 'EM iteration %i' % (iteration + 1)
             # init count(e|f) and total(f)
             count = defaultdict(float)
             total = defaultdict(float)
@@ -84,7 +84,7 @@ class IBM1(object):
                 perplexity_old = perplexity
 
             if self.num_iter is not None:
-                if iteration == self.num_iter - 1:
+                if iteration + 1 == self.num_iter:
                     self.probabilities = t
                     break
 
@@ -99,15 +99,23 @@ if __name__ == '__main__':
     #p_corp = [(['the', 'house'], ['das', 'haus']), (['the', 'book'], ['das', 'buch']), (['a', 'book'], ['ein', 'buch'])]
 
     n_p_sent = 'all'
+    direction = 'ef'
     if len(sys.argv) > 1:
         n_p_sent = int(sys.argv[1])
+        if len(sys.argv) > 2:
+            direction = sys.argv[2]
+
+    print 'Training in direction: ' + direction
 
     p_corp = []
     print 'Training for ' + str(n_p_sent) + ' sentences...'
     with open('corpus.en', 'rb') as corpus_en:
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
-                p_corp.append((line_en.split(), line_nl.split()))
+                if direction == 'ef':
+                    p_corp.append((line_en.split(), line_nl.split()))
+                elif direction == 'fe':
+                    p_corp.append((line_nl.split(), line_en.split()))
                 if n_p_sent is not 'all':
                     if len(p_corp) == n_p_sent:
                         break
@@ -120,12 +128,24 @@ if __name__ == '__main__':
     ibm1.train()
 
     print 'Saving the model to disk...'
-    with open('IBM1_trained_ef.pickle', 'wb') as handle:
-        pickle.dump(ibm1, handle)
+    if direction == 'ef':
+        with open('IBM1_trained_ef.pickle', 'wb') as handle:
+            pickle.dump(ibm1, handle)
+    elif direction == 'fe':
+        with open('IBM1_trained_fe.pickle', 'wb') as handle:
+            pickle.dump(ibm1, handle)
 
-    key = ('this', 'deze')
-    print key, ibm1.probabilities[key[0], key[1]]
-    key = ('these', 'deze')
-    print key, ibm1.probabilities[key[0], key[1]]
-    key = ('transparency', 'transparantie')
-    print key, ibm1.probabilities[key[0], key[1]]
+    if direction == 'ef':
+        key = ('this', 'deze')
+        print key, ibm1.probabilities[key[0], key[1]]
+        key = ('these', 'deze')
+        print key, ibm1.probabilities[key[0], key[1]]
+        key = ('transparency', 'transparantie')
+        print key, ibm1.probabilities[key[0], key[1]]
+    elif direction == 'fe':
+        key = ('deze', 'this')
+        print key, ibm1.probabilities[key[0], key[1]]
+        key = ('deze', 'these')
+        print key, ibm1.probabilities[key[0], key[1]]
+        key = ('transparantie', 'transparency')
+        print key, ibm1.probabilities[key[0], key[1]]
