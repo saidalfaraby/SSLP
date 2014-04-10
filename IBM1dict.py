@@ -32,8 +32,7 @@ class IBM1(object):
         self.voc_f.add(None)
 
     def train(self):
-        t = defaultdict(lambda: defaultdict(lambda: 1.0/len(self.voc_f)))
-        #print 'Initial probabilities: %f' % (1.0/len(self.voc_f))
+        t = defaultdict(lambda: 1.0/len(self.voc_f))
         converged = False
         iteration = 0
         perplexity_old = 10**200
@@ -52,18 +51,17 @@ class IBM1(object):
                 for e in sent.words_e:
                     total_s[e] = 0
                     for f in sent.words_f+[None]:
-                        total_s[e] += t[e][f]
+                        total_s[e] += t[e, f]
                 for e in sent.words_e:
                     for f in sent.words_f+[None]:
-                        count[e, f] += t[e][f]/total_s[e]
-                        total[f] += t[e][f]/total_s[e]
+                        count[e, f] += t[e, f]/total_s[e]
+                        total[f] += t[e, f]/total_s[e]
 
             # normalize and get new t(e|f)
             # M - Step
             print 'Doing M-Step...'
-            for e in t.keys():
-                for f in t[e].keys():
-                    t[e][f] = count[e, f] / total[f]
+            for e, f in t:
+                    t[e, f] = count[e, f] / total[f]
 
             # have we converged?
             perplexity = 0
@@ -73,7 +71,7 @@ class IBM1(object):
                 for e in sent.words_e:
                     p_ = 0
                     for f in sent.words_f+[None]:
-                        p_ += t[e][f]
+                        p_ += t[e, f]
                     mult *= p_
                 perplexity += np.log2(norm * mult)
             perplexity = - perplexity
@@ -105,8 +103,8 @@ if __name__ == '__main__':
 
     p_corp = []
     print 'Training for ' + str(n_p_sent) + ' sentences...'
-    with open('corpus_1000.en', 'rb') as corpus_en:
-        with open('corpus_1000.nl', 'rb') as corpus_nl:
+    with open('corpus.en', 'rb') as corpus_en:
+        with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
                 p_corp.append((line_en.split(), line_nl.split()))
                 if n_p_sent is not 'all':
@@ -117,10 +115,7 @@ if __name__ == '__main__':
     for sentence in p_corp:
         p_sentences.append(Pair_sent(sentence))
 
-    #for p_sent in p_sentences:
-    #    print p_sent.words_e, p_sent.words_f
-
-    ibm1 = IBM1(p_sentences, 1e-1)
+    ibm1 = IBM1(p_sentences, 1e-1, num_iter=None)
     ibm1.train()
 
     print 'Saving the model to disk...'
@@ -128,10 +123,8 @@ if __name__ == '__main__':
         pickle.dump(ibm1, handle)
 
     key = ('this', 'deze')
-    print key, ibm1.probabilities[key[0]][key[1]]
+    print key, ibm1.probabilities[key[0], key[1]]
     key = ('these', 'deze')
-    print key, ibm1.probabilities[key[0]][key[1]]
+    print key, ibm1.probabilities[key[0], key[1]]
     key = ('transparency', 'transparantie')
-    print key, ibm1.probabilities[key[0]][key[1]]
-    #for key, value in ibm1.probabilities.iteritems():
-    #    print key, value
+    print key, ibm1.probabilities[key[0], key[1]]
