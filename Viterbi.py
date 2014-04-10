@@ -4,6 +4,7 @@ import dill as pickle
 import numpy as np
 from collections import defaultdict
 import re
+import sys
 
 
 # def viterbi(ibm1, sent):
@@ -135,8 +136,19 @@ def getPR(giza, computed):
 
 if __name__ == '__main__':
 
-    with open('IBM1_trained_fe.pickle', 'rb') as handle:
-        ibm1 = pickle.load(handle)
+    n_p_sent = 'all'
+    direction = 'ef'
+    if len(sys.argv) > 1:
+        n_p_sent = int(sys.argv[1])
+        if len(sys.argv) > 2:
+            direction = sys.argv[2]
+
+    if direction == 'fe':
+        with open('IBM1_trained_fe.pickle', 'rb') as handle:
+            ibm1 = pickle.load(handle)
+    elif direction == 'ef':
+        with open('IBM1_trained_ef.pickle', 'rb') as handle:
+            ibm1 = pickle.load(handle)
 
     # ibm1 = IBM1()
 
@@ -154,8 +166,9 @@ if __name__ == '__main__':
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
                 p_corp.append((line_nl.split(), [None]+line_en.split()))
-                if len(p_corp) == 1000:
-                    break
+                if n_p_sent is not 'all':
+                    if len(p_corp) == n_p_sent:
+                        break
 
     sentences = []
     for elem in p_corp:
