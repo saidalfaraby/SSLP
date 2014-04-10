@@ -1,3 +1,4 @@
+from __future__ import division
 from IBM1 import IBM1, Pair_sent
 import dill as pickle
 import numpy as np
@@ -45,8 +46,8 @@ def simpleMax(ibm1, sent):
         maxpos = -1
         maxprob = -1.0
         for f in range(len(sent.words_f)):
-            p = t[sent.words_e[e],sent.words_f[f]]
-            if p>maxprob:
+            p = t[sent.words_e[e], sent.words_f[f]]
+            if p > maxprob:
                 maxprob = p
                 maxpos = f
 
@@ -57,6 +58,7 @@ def simpleMax(ibm1, sent):
         path[maxpos]
         path[maxpos].append(e+1)
     return (prob, path)
+
 
 def parseGiza(filename):
     with open(filename, 'rb') as giza:
@@ -84,14 +86,52 @@ def parseGiza(filename):
                         align[i] = map(int, num)
                     alignments.append(align)
                 else:
-                    print "line:" + str(aligned.strip('\n'))
-                    print "parsed: " + str(parsed)
-                    print 'Cannot parse sentence ' + str(sent)
-                    print
+                    # print "line:" + str(aligned.strip('\n'))
+                    # print "parsed: " + str(parsed)
+                    # print 'Cannot parse sentence ' + str(sent)
+                    # print
                     alignments.append(align)
             sent += 1
 
     return alignments
+
+
+def getPR(giza, computed):
+    precision, recall, mse = ([], [], [])
+    for i in xrange(len(giza)):
+        p, r, err = 0, 0, 0
+        for g in giza[i]:
+            if g is not 'prob':
+                enu = set(computed[i][g]).intersection(set(giza[i][g]))
+                if len(computed[i][g]) == len(giza[i][g]) == 0:
+                    p += 1
+                    r += 1
+                else:
+                    try:
+                        p += len(enu)/len(computed[i][g])
+                    except:
+                        print 'no p'
+                        print 'common ' + str(enu)
+                        print 'giza ' + str(giza[i][g])
+                        print 'computed ' + str(computed[i][g])
+                        print
+                        p += 0
+                    try:
+                        r += len(enu)/len(giza[i][g])
+                    except:
+                        print 'no r'
+                        print 'common ' + str(enu)
+                        print 'giza ' + str(giza[i][g])
+                        print 'computed ' + str(computed[i][g])
+                        print
+                        r += 1
+            else:
+                err += (computed[i][g] - giza[i][g]) ** 2
+
+        precision.append(p/len(giza[i])), recall.append(r/len(giza[i])), mse.append(err/len(giza[i]))
+
+    return precision, recall, mse
+
 
 if __name__ == '__main__':
 
@@ -114,14 +154,12 @@ if __name__ == '__main__':
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
                 p_corp.append((line_nl.split(), [None]+line_en.split()))
-                if len(p_corp) == 2:
+                if len(p_corp) == 1000:
                     break
 
     sentences = []
     for elem in p_corp:
         sentences.append(Pair_sent(elem))
-
-        
 
     sentAligned = []
     print 'viterbi'
@@ -132,11 +170,16 @@ if __name__ == '__main__':
         # print sent.words_e, sent.words_f
         # print path
         # print prob
-        print path
-        print
+        #print path
+        #print
 
     gizaAligned = parseGiza('corpus_1000_ennl_viterbi')
-    
+
+    precision, recall, mse = getPR(gizaAligned, sentAligned)
+    print 'Total precision: ' + str(sum(precision)/len(gizaAligned))
+    print 'Total recall: ' + str(sum(recall)/len(gizaAligned))
+    print 'Total mse: ' + str(sum(mse)/len(gizaAligned))
+
 
     # print 'simple Max'
     # for sent in sentences:
