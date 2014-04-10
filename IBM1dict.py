@@ -85,6 +85,7 @@ class IBM1(object):
 
             if self.num_iter is not None:
                 if iteration == self.num_iter - 1:
+                    self.probabilities = t
                     break
 
             iteration += 1
@@ -115,7 +116,7 @@ if __name__ == '__main__':
     for sentence in p_corp:
         p_sentences.append(Pair_sent(sentence))
 
-    ibm1 = IBM1(p_sentences, 1e-1, num_iter=None)
+    ibm1 = IBM1(p_sentences, 1e-1, num_iter=20)
     ibm1.train()
 
     print 'Saving the model to disk...'
