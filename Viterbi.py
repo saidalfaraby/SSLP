@@ -13,7 +13,7 @@ def penDist(i, j, l, m):
     """
     if i==0:
         "a reasonable value, can't be 1 because then all word will go to Null"
-        return np.exp(-np.sqrt(abs(0)))
+        return np.exp(-np.sqrt(abs(1/4)/(abs(l-m) + 1)))
     return np.exp(-np.sqrt(abs(i-j)/(abs(l-m) + 1)))
 
 
@@ -198,9 +198,11 @@ if __name__ == '__main__':
         sentAligned.append(path)
         f.write(str(path))
         f.write('\n')
-        # print sent.words_e, sent.words_f
+        print sent.words_e
+        print sent.words_f
         print 'path simple max'
         print path
+        print
         # print prob
         #print path
         #print
