@@ -6,14 +6,16 @@ from collections import defaultdict
 import re
 import sys
 
-def penDist(i,j):
+
+def penDist(i, j, l, m):
     """
     i should be the index of sentence that have Null at 0 index
     """
     if i==0:
         "a reasonable value, can't be 1 because then all word will go to Null"
         return np.exp(-np.sqrt(abs(0)))
-    return np.exp(-np.sqrt(abs(i-j)))
+    return np.exp(-np.sqrt(abs(i-j)/abs(l-m)))
+
 
 def viterbi(ibm1, sent):
     t = ibm1.probabilities
@@ -33,7 +35,8 @@ def viterbi(ibm1, sent):
         newpath = {}
 
         for f in xrange(len(sent.words_f)):
-            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f]*penDist(y0,ie), y0) for y0 in xrange(len(sent.words_f)))
+            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f]*
+                penDist(y0,ie, len(sent.words_e), len(sent.words_f)), y0) for y0 in xrange(len(sent.words_f)))
             V[ie][f] = prob
             newpath[f] = path[state] + [f]
 
@@ -202,7 +205,7 @@ if __name__ == '__main__':
         print 'path viterbi'
         print path
 
-       
+
 
     gizaAligned = parseGiza('corpus_1000_ennl_viterbi')
 
