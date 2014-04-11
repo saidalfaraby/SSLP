@@ -6,32 +6,43 @@ from collections import defaultdict
 import re
 import sys
 
+def penDist(i,j):
+    """
+    i should be the index of sentence that have Null at 0 index
+    """
+    if i==0:
+        "a reasonable value, can't be 1 because then all word will go to Null"
+        return np.exp(-np.sqrt(abs(0)))
+    return np.exp(-np.sqrt(abs(i-j)))
 
-# def viterbi(ibm1, sent):
-#     t = ibm1.probabilities
-#     V = [{}]
-#     path = {}
+def viterbi(ibm1, sent):
+    t = ibm1.probabilities
+    V = [{}]
+    path = {}
+    pathReturn = defaultdict(list)
+    for f in range(len(sent.words_f)):
+        pathReturn[f]
 
-#     # Initialize base cases (t == 0)
-#     for f in sent.words_f:
-#         V[0][f] = 1.0
-#         path[f] = []
+    # Initialize base cases (t == 0)
+    for f in xrange(len(sent.words_f)):
+        V[0][f] = 1.0
+        path[f] = []
 
-#     for ie in range(1, len(sent.words_e)+1):
-#         V.append({})
-#         newpath = {}
+    for ie in range(1, len(sent.words_e)+1):
+        V.append({})
+        newpath = {}
 
-#         for f in sent.words_f:
-#             (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f], y0) for y0 in sent.words_f)
-#             V[ie][f] = prob
-#             newpath[f] = path[state] + [f]
+        for f in xrange(len(sent.words_f)):
+            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f]*penDist(y0,ie), y0) for y0 in xrange(len(sent.words_f)))
+            V[ie][f] = prob
+            newpath[f] = path[state] + [f]
 
-#         # Don't need to remember the old paths
-#         path = newpath
+        # Don't need to remember the old paths
+        path = newpath
 
-#     #print_dptable(V)
-#     (prob, state) = max((V[ie][y], y) for y in sent.words_f)
-#     return (prob, path[state])
+    #print_dptable(V)
+    (prob, state) = max((V[ie][y], y) for y in xrange(len(sent.words_f)))
+    return (prob, path[state])
 
 
 def simpleMax(ibm1, sent):
@@ -179,11 +190,18 @@ if __name__ == '__main__':
         f.write(str(path))
         f.write('\n')
         # print sent.words_e, sent.words_f
-        # print path
+        print 'path simple max'
+        print path
         # print prob
         #print path
         #print
     f.close()
+
+    for sent in sentences:
+        prob, path = viterbi(ibm1, sent)
+        print 'path viterbi'
+        print path
+
        
 
     gizaAligned = parseGiza('corpus_1000_ennl_viterbi')
