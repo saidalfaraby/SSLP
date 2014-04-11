@@ -99,7 +99,7 @@ if __name__ == '__main__':
     #p_corp = [(['the', 'house'], ['das', 'haus']), (['the', 'book'], ['das', 'buch']), (['a', 'book'], ['ein', 'buch'])]
 
     n_p_sent = 'all'
-    direction = 'ef'
+    direction = 'fe'
     if len(sys.argv) > 1:
         n_p_sent = int(sys.argv[1])
         if len(sys.argv) > 2:
