@@ -97,9 +97,9 @@ def parseGiza(filename):
 
 
 def getPR(giza, computed):
-    precision, recall, mse = ([], [], [])
+    precision, recall, mse, aer = ([], [], [], [])
     for i in xrange(len(giza)):
-        p, r, err = 0, 0, 0
+        p, r, err, ar = (0, 0, 0, 0)
         for g in giza[i]:
             if g is not 'prob':
                 enu = set(computed[i][g]).intersection(set(giza[i][g]))
@@ -125,18 +125,20 @@ def getPR(giza, computed):
                         print 'computed ' + str(computed[i][g])
                         print
                         r += 1
+                    ar += 1 - ((2*len(enu))/ (len(computed[i][g]) + len(giza[i][g])))
             else:
                 err += (computed[i][g] - giza[i][g]) ** 2
 
-        precision.append(p/len(giza[i])), recall.append(r/len(giza[i])), mse.append(err/len(giza[i]))
+        precision.append(p/len(giza[i])), recall.append(r/len(giza[i]))
+        mse.append(err/len(giza[i])), aer.append(ar/len(giza[i]))
 
-    return precision, recall, mse
+    return precision, recall, aer, mse
 
 
 if __name__ == '__main__':
 
     n_p_sent = 'all'
-    direction = 'ef'
+    direction = 'fe'
     if len(sys.argv) > 1:
         n_p_sent = int(sys.argv[1])
         if len(sys.argv) > 2:
@@ -149,22 +151,16 @@ if __name__ == '__main__':
         with open('IBM1_trained_ef.pickle', 'rb') as handle:
             ibm1 = pickle.load(handle)
 
-    # ibm1 = IBM1()
-
-    # with open('en_2id.pickle', 'rb') as handle:
-    #     with open('nl_2id.pickle', 'rb') as handle2:
-    #         ibm1.set_w2id(pickle.load(handle), pickle.load(handle2))
-
-    # ibm1.set_probabilities(np.loadtxt('trained_ibm1.txt', delimiter=','))
-
-    # key3 = ('transparency', 'transparantie')
-    # print key3, ibm1.probabilities[key3]
+    print 'Estimating alignments in direction: ' + direction
 
     p_corp = []
     with open('corpus.en', 'rb') as corpus_en:
         with open('corpus.nl', 'rb') as corpus_nl:
             for line_en, line_nl in zip(corpus_en.readlines(), corpus_nl.readlines()):
-                p_corp.append((line_nl.split(), [None]+line_en.split()))
+                if direction == 'ef':
+                    p_corp.append((line_en.split(), [None]+line_nl.split()))
+                elif direction == 'fe':
+                    p_corp.append((line_nl.split(), [None]+line_en.split()))
                 if n_p_sent is not 'all':
                     if len(p_corp) == n_p_sent:
                         break
@@ -174,7 +170,7 @@ if __name__ == '__main__':
         sentences.append(Pair_sent(elem))
 
     sentAligned = []
-    print 'viterbi'
+    print 'Viterbi aligments:'
     for sent in sentences:
         prob, path = simpleMax(ibm1, sent)
         path['prob'] = prob
@@ -187,10 +183,11 @@ if __name__ == '__main__':
 
     gizaAligned = parseGiza('corpus_1000_ennl_viterbi')
 
-    precision, recall, mse = getPR(gizaAligned, sentAligned)
-    print 'Total precision: ' + str(sum(precision)/len(gizaAligned))
-    print 'Total recall: ' + str(sum(recall)/len(gizaAligned))
-    print 'Total mse: ' + str(sum(mse)/len(gizaAligned))
+    precision, recall, aer, mse = getPR(gizaAligned, sentAligned)
+    print 'Total Precision: ' + str(sum(precision)/len(gizaAligned))
+    print 'Total Recall: ' + str(sum(recall)/len(gizaAligned))
+    print 'Total AER: ' + str(sum(aer)/ len(gizaAligned))
+    print 'Total MSE: ' + str(sum(mse)/len(gizaAligned))
 
 
     # print 'simple Max'
