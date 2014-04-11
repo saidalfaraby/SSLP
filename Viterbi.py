@@ -170,16 +170,21 @@ if __name__ == '__main__':
         sentences.append(Pair_sent(elem))
 
     sentAligned = []
+    f = open('viterbiAligned','w')
     print 'Viterbi aligments:'
     for sent in sentences:
         prob, path = simpleMax(ibm1, sent)
         path['prob'] = prob
         sentAligned.append(path)
+        f.write(str(path))
+        f.write('\n')
         # print sent.words_e, sent.words_f
         # print path
         # print prob
         #print path
         #print
+    f.close()
+       
 
     gizaAligned = parseGiza('corpus_1000_ennl_viterbi')
 
