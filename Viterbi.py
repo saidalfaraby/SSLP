@@ -14,7 +14,7 @@ def penDist(i, j, l, m):
     if i==0:
         "a reasonable value, can't be 1 because then all word will go to Null"
         return np.exp(-np.sqrt(abs(0)))
-    return np.exp(-np.sqrt(abs(i-j)/abs(l-m)))
+    return np.exp(-np.sqrt(abs(i-j)/(abs(l-m) + 1)))
 
 
 def viterbi(ibm1, sent):
@@ -35,8 +35,9 @@ def viterbi(ibm1, sent):
         newpath = {}
 
         for f in xrange(len(sent.words_f)):
-            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f]*
-                penDist(y0,ie, len(sent.words_e), len(sent.words_f)), y0) for y0 in xrange(len(sent.words_f)))
+            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f] *
+                penDist(y0,ie, len(sent.words_e), len(sent.words_f)), y0)
+                for y0 in xrange(len(sent.words_f)))
             V[ie][f] = prob
             newpath[f] = path[state] + [f]
 
@@ -48,7 +49,7 @@ def viterbi(ibm1, sent):
     return (prob, path[state])
 
 
-def simpleMax(ibm1, sent):
+def simpleMax(ibm1, sent, penalize=False):
     t = ibm1.probabilities
     prob = 1.0
     path = defaultdict(list)
@@ -61,7 +62,10 @@ def simpleMax(ibm1, sent):
         maxpos = -1
         maxprob = -1.0
         for f in range(len(sent.words_f)):
-            p = t[sent.words_e[e], sent.words_f[f]]
+            if penalize:
+                p = t[sent.words_e[e], sent.words_f[f]] * penDist(e, f, len(sent.words_e), len(sent.words_f))
+            else:
+                p = t[sent.words_e[e], sent.words_f[f]]
             if p > maxprob:
                 maxprob = p
                 maxpos = f
@@ -110,7 +114,7 @@ def parseGiza(filename):
     return alignments
 
 
-def getPR(giza, computed):
+def getPR(giza, computed, debug=False):
     precision, recall, mse, aer = ([], [], [], [])
     for i in xrange(len(giza)):
         p, r, err, ar = (0, 0, 0, 0)
@@ -124,20 +128,22 @@ def getPR(giza, computed):
                     try:
                         p += len(enu)/len(computed[i][g])
                     except:
-                        print 'no p'
-                        print 'common ' + str(enu)
-                        print 'giza ' + str(giza[i][g])
-                        print 'computed ' + str(computed[i][g])
-                        print
+                        if debug:
+                            print 'no p'
+                            print 'common ' + str(enu)
+                            print 'giza ' + str(giza[i][g])
+                            print 'computed ' + str(computed[i][g])
+                            print
                         p += 0
                     try:
                         r += len(enu)/len(giza[i][g])
                     except:
-                        print 'no r'
-                        print 'common ' + str(enu)
-                        print 'giza ' + str(giza[i][g])
-                        print 'computed ' + str(computed[i][g])
-                        print
+                        if debug:
+                            print 'no r'
+                            print 'common ' + str(enu)
+                            print 'giza ' + str(giza[i][g])
+                            print 'computed ' + str(computed[i][g])
+                            print
                         r += 1
                     ar += 1 - ((2*len(enu))/ (len(computed[i][g]) + len(giza[i][g])))
             else:
@@ -187,7 +193,7 @@ if __name__ == '__main__':
     f = open('viterbiAligned','w')
     print 'Viterbi aligments:'
     for sent in sentences:
-        prob, path = simpleMax(ibm1, sent)
+        prob, path = simpleMax(ibm1, sent, penalize=True)
         path['prob'] = prob
         sentAligned.append(path)
         f.write(str(path))
@@ -200,16 +206,16 @@ if __name__ == '__main__':
         #print
     f.close()
 
-    for sent in sentences:
-        prob, path = viterbi(ibm1, sent)
-        print 'path viterbi'
-        print path
+    # for sent in sentences:
+    #     prob, path = viterbi(ibm1, sent)
+    #     print 'path viterbi'
+    #     print path
 
 
 
     gizaAligned = parseGiza('corpus_1000_ennl_viterbi')
 
-    precision, recall, aer, mse = getPR(gizaAligned, sentAligned)
+    precision, recall, aer, mse = getPR(gizaAligned, sentAligned, debug=False)
     print 'Total Precision: ' + str(sum(precision)/len(gizaAligned))
     print 'Total Recall: ' + str(sum(recall)/len(gizaAligned))
     print 'Total AER: ' + str(sum(aer)/ len(gizaAligned))
