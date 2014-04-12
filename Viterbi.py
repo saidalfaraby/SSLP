@@ -17,36 +17,41 @@ def penDist(i, j, l, m):
     return np.exp(-np.sqrt((m/l) * abs(i-j)))
 
 
-def viterbi(ibm1, sent):
+def viterbi(ibm1, sent, penalize=False):
     t = ibm1.probabilities
     V = [{}]
     path = {}
     pathReturn = defaultdict(list)
-    for f in range(len(sent.words_f)):
-        pathReturn[f]
 
     # Initialize base cases (t == 0)
     for f in xrange(len(sent.words_f)):
         V[0][f] = 1.0
         path[f] = []
+        pathReturn[f]
 
     for ie in range(1, len(sent.words_e)+1):
         V.append({})
         newpath = {}
 
         for f in xrange(len(sent.words_f)):
-            (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], f] *
-                penDist(y0,ie, len(sent.words_e), len(sent.words_f)), y0)
-                for y0 in xrange(len(sent.words_f)))
+            if penalize is True:
+                (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]] *
+                    penDist(y0,ie, len(sent.words_e), len(sent.words_f)), y0)
+                    for y0 in xrange(len(sent.words_f)))
+            else:
+                (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]], y0)
+                    for y0 in xrange(len(sent.words_f)))
             V[ie][f] = prob
             newpath[f] = path[state] + [f]
-
         # Don't need to remember the old paths
         path = newpath
 
     #print_dptable(V)
     (prob, state) = max((V[ie][y], y) for y in xrange(len(sent.words_f)))
-    return (prob, path[state])
+    p = path[state]
+    for i in range(len(p)):
+        pathReturn[p[i]].append(i+1)
+    return (prob, pathReturn)
 
 
 def simpleMax(ibm1, sent, penalize=False):
@@ -193,7 +198,8 @@ if __name__ == '__main__':
     f = open('viterbiAligned','w')
     print 'Viterbi aligments:'
     for sent in sentences:
-        prob, path = simpleMax(ibm1, sent, penalize=True)
+        # prob, path = simpleMax(ibm1, sent, penalize=True)
+        prob, path = viterbi(ibm1, sent, penalize=True)
         path['prob'] = prob
         sentAligned.append(path)
         f.write(str(path))
