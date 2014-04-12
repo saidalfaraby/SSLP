@@ -13,8 +13,8 @@ def penDist(i, j, l, m):
     """
     if i==0:
         "a reasonable value, can't be 1 because then all word will go to Null"
-        return np.exp(-np.sqrt(abs(1/4)/(abs(l-m) + 1)))
-    return np.exp(-np.sqrt(abs(i-j)/(abs(l-m) + 1)))
+        return np.exp(-np.sqrt((m/l) * abs(1/4)))
+    return np.exp(-np.sqrt((m/l) * abs(i-j)))
 
 
 def viterbi(ibm1, sent):
