@@ -35,14 +35,28 @@ def viterbi(ibm1, sent, penalize=False):
 
         for f in xrange(len(sent.words_f)):
             if penalize is True:
-                (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]] *
-                    penDist(y0,ie, len(sent.words_e), len(sent.words_f)), y0)
-                    for y0 in xrange(len(sent.words_f)))
+                maxpos = -1
+                maxprob = -1.0
+                for y0 in xrange(len(sent.words_f)):
+                    prob = V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]]*penDist(y0,ie, len(sent.words_e), len(sent.words_f))
+                    if prob > maxprob:
+                        maxprob = prob
+                        maxpos = y0
+                # (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]] *
+                #     penDist(y0,ie, len(sent.words_e), len(sent.words_f)), y0)
+                #     for y0 in xrange(len(sent.words_f)))
             else:
-                (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]], y0)
-                    for y0 in xrange(len(sent.words_f)))
-            V[ie][f] = prob
-            newpath[f] = path[state] + [f]
+                maxpos = -1
+                maxprob = -1.0
+                for y0 in xrange(len(sent.words_f)):
+                    prob = V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]]
+                    if (prob>maxprob):
+                        maxprob = prob
+                        maxpos = y0
+                # (prob, state) = max((V[ie-1][y0] * t[sent.words_e[ie-1], sent.words_f[f]], y0)
+                #     for y0 in xrange(len(sent.words_f)))
+            V[ie][f] = maxprob
+            newpath[f] = path[maxpos] + [f]
         # Don't need to remember the old paths
         path = newpath
 
@@ -199,7 +213,7 @@ if __name__ == '__main__':
     print 'Viterbi aligments:'
     for sent in sentences:
         # prob, path = simpleMax(ibm1, sent, penalize=True)
-        prob, path = viterbi(ibm1, sent, penalize=True)
+        prob, path = viterbi(ibm1, sent, penalize=False)
         path['prob'] = prob
         sentAligned.append(path)
         f.write(str(path))
