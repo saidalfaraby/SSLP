@@ -5,16 +5,23 @@ import numpy as np
 from collections import defaultdict
 import re
 import sys
+from scipy.stats import norm
 
 
 def penDist(i, j, l, m):
     """
     i should be the index of sentence that have Null at 0 index
     """
-    if i==0:
+    if j==0:
         "a reasonable value, can't be 1 because then all word will go to Null"
         return np.exp(-np.sqrt((m/l) * abs(1/4)))
     return np.exp(-np.sqrt((m/l) * abs(i-j)))
+
+
+def penDist_gauss(i, j, l, m):
+    if j==0:
+        return norm.pdf(i+2, i, 2)
+    return norm.pdf(j, i, m/l)
 
 
 def viterbi(ibm1, sent, penalize=False):
@@ -82,7 +89,7 @@ def simpleMax(ibm1, sent, penalize=False):
         maxprob = -1.0
         for f in range(len(sent.words_f)):
             if penalize:
-                p = t[sent.words_e[e], sent.words_f[f]] * penDist(e, f, len(sent.words_e), len(sent.words_f))
+                p = t[sent.words_e[e], sent.words_f[f]] * penDist_gauss(e, f, len(sent.words_e), len(sent.words_f))
             else:
                 p = t[sent.words_e[e], sent.words_f[f]]
             if p > maxprob:
@@ -126,7 +133,12 @@ def parseGiza(filename):
                     # print "line:" + str(aligned.strip('\n'))
                     # print "parsed: " + str(parsed)
                     # print 'Cannot parse sentence ' + str(sent)
-                    # print
+
+                    # we cannot parse sentence 871 since there are 3 spaces between
+                    # some words and it actually counts a space as a word and
+                    # the resulting aligned giza file has nothing there
+                    # e.g. the ({ 5 8 })  ({ 2 3 10 })
+                    # which breaks the regular expression we use to parse the file
                     alignments.append(align)
             sent += 1
 
@@ -212,8 +224,8 @@ if __name__ == '__main__':
     f = open('viterbiAligned','w')
     print 'Viterbi aligments:'
     for sent in sentences:
-        # prob, path = simpleMax(ibm1, sent, penalize=True)
-        prob, path = viterbi(ibm1, sent, penalize=False)
+        prob, path = simpleMax(ibm1, sent, penalize=True)
+        # prob, path = viterbi(ibm1, sent, penalize=True)
         path['prob'] = prob
         sentAligned.append(path)
         f.write(str(path))
