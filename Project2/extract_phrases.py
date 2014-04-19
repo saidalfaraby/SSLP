@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+from collections import defaultdict
 
 
 class AlignedSentences(object):
@@ -20,14 +21,92 @@ def parse_aligned_sent(path_en, path_nl, path_al, how_many):
                     w_en, w_nl = s_en.split(), s_nl.split()
                     w_al = np.asarray([map(int, k.split('-')) for k in s_al.split()])
 
-                    al = np.zeros((len(w_nl), len(w_en)), dtype=int)
-                    al[w_al[:, 0], w_al[:, 1]] = 1
-                    aligned_sent.append(AlignedSentences(w_en, w_nl, al))
+                    # ali = np.zeros((len(w_nl), len(w_en)), dtype=int)
+                    # ali[w_al[:, 0], w_al[:, 1]] = 1
+                    aligned_sent.append(AlignedSentences(w_en, w_nl, w_al))
+
                     so_far += 1
                     if so_far == how_many:
                         break
+
     return aligned_sent
 
+
+def parse_phrases(aligned_sent):
+    phrase_pairs = set()
+    for sent in aligned_sent:
+        for e_start in xrange(len(sent.w_nl)):
+            for e_end in xrange(e_start, len(sent.w_nl)):
+                f_start, f_end = len(sent.w_en), 0
+                for e, f in sent.al:
+                    if e_start <= e and e <= e_end:
+                        f_start = min(f, f_start)
+                        f_end = max(f, f_end)
+                # print 'f_start', f_start, 'f_end', f_end, 'e_start', e_start, 'e_end', e_end
+                E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl)
+                phrase_pairs.update(E)
+
+    for elem in phrase_pairs:
+        pair = elem.split('#')
+        for i in pair:
+            print i
+        print
+    return phrase_pairs
+
+
+def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl):
+    aligned_fe = defaultdict(lambda: False)
+    aligned_fs = defaultdict(lambda: False)
+    # print
+    # print 'f_start', f_start, 'f_end', f_end, 'e_start', e_start, 'e_end', e_end
+    if f_end == 0:
+        # print 'zero f_end'
+        return set()
+    for e, f in w_a:
+        if e < e_start or e > e_end:
+            # print 'violating consistency'
+            return set()
+    E = set()
+    f_s = f_start
+    # print 'passed and adding possible phrases'
+    while True:
+        # flag1 = 0
+        f_e = f_end
+        while True:
+            # flag = 0
+            if abs(e_start - e_end) <= 4:
+                E.add(' '.join(w_nl[e_start:e_end]) + ' # ' + ' '.join(w_en[f_s:f_e]))
+            aligned_fe[f_e] = True
+            f_e += 1
+            if aligned_fe[f_e] or f_e == len(w_en):
+                break
+            # for element in E:
+            #     try:
+            #         if w_nl[f_e] in element:
+            #             flag = 1
+            #             break
+            #     except:
+            #         flag = 1
+            #         break
+            # if flag == 1:
+            #     break
+            # print f_e
+        aligned_fs[f_s] = True
+        f_s -= 1
+        if aligned_fs[f_s] or f_s < 0:
+            break
+        # for element in E:
+        #     try:
+        #         if w_nl[f_s] in element:
+        #             flag1 = 1
+        #             break
+        #     except:
+        #         flag1 = 1
+        #         break
+        # if flag1 == 1:
+        #     break
+
+    return E
 
 if __name__ == '__main__':
 
@@ -35,11 +114,6 @@ if __name__ == '__main__':
     en_corp = 'p2_training.en'
     nl_corp = 'p2_training.nl'
     al_corp = 'p2_training_symal.nlen'
-    how_many = 10
+    how_many = 1000
     aligned_sent = parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
-
-    for sent in aligned_sent:
-        print sent.w_en
-        print sent.w_nl
-        print sent.al
-        print
+    parse_phrases(aligned_sent)
