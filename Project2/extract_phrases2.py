@@ -32,12 +32,12 @@ def parse_aligned_sent(path_en, path_nl, path_al, how_many):
     return aligned_sent
 
 
-def parse_phrases(aligned_sent):
+def parse_phrases(aligned_sent, max_len=4):
     phrase_pairs = set()
     for sent in aligned_sent:
         aligned = defaultdict(lambda: False)
         for e_start in xrange(len(sent.w_nl)):
-            for e_end in xrange(e_start, len(sent.w_nl)):
+            for e_end in xrange(e_start, e_start + max_len):
                 f_start, f_end = len(sent.w_en), -1
                 for e, f in sent.al:
                     aligned[f] = True
@@ -58,7 +58,7 @@ def parse_phrases(aligned_sent):
 
 
 # def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl):
-def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl,aligned):
+def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl, aligned):
     # print f_start, f_end, e_start, e_end
     # aligned_fe = defaultdict(lambda: False)
     # aligned_fs = defaultdict(lambda: False)
@@ -68,7 +68,7 @@ def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl,aligned):
         # print 'zero f_end'
         return set()
     for e, f in w_a:
-        if f >= f_start and f<= f_end:
+        if f >= f_start and f <= f_end:
             if e < e_start or e > e_end:
                 # print 'violating consistency'
                 return set()
@@ -76,43 +76,20 @@ def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl,aligned):
     f_s = f_start
     # print 'passed and adding possible phrases'
     while True:
-        # flag1 = 0
         f_e = f_end
         while True:
-            # flag = 0
-            if abs(e_start - e_end) <= 3:
-                E.add(' '.join(w_nl[e_start:e_end+1]) + ' # ' + ' '.join(w_en[f_s:f_e+1]))
+            #if abs(e_start - e_end) <= 3:
+            E.add(' '.join(w_nl[e_start:e_end+1]) + ' # ' + ' '.join(w_en[f_s:f_e+1]))
             # aligned_fe[f_e] = True
             f_e += 1
             # if aligned_fe[f_e] or f_e == len(w_en):
             if aligned[f_e] or f_e == len(w_en):
                 break
-            # for element in E:
-            #     try:
-            #         if w_nl[f_e] in element:
-            #             flag = 1
-            #             break
-            #     except:
-            #         flag = 1
-            #         break
-            # if flag == 1:
-            #     break
-            # print f_e
         # aligned_fs[f_s] = True
         f_s -= 1
         # if aligned_fs[f_s] or f_s < 0:
         if aligned[f_s] or f_s < 0:
             break
-        # for element in E:
-        #     try:
-        #         if w_nl[f_s] in element:
-        #             flag1 = 1
-        #             break
-        #     except:
-        #         flag1 = 1
-        #         break
-        # if flag1 == 1:
-        #     break
 
     return E
 
@@ -123,5 +100,6 @@ if __name__ == '__main__':
     nl_corp = 'p2_training.nl'
     al_corp = 'p2_training_symal.nlen'
     how_many = 1
+    max_len = 4
     aligned_sent = parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
-    parse_phrases(aligned_sent)
+    parse_phrases(aligned_sent, max_len=max_len)
