@@ -36,7 +36,8 @@ def parse_phrases(aligned_sent, max_len=4):
     phrase_pairs = set()
     # how to estimate the joint probability?
     # number of occurences of the phrase, divided by the number of sentences?
-    # joint_probs = defaultdict(float)
+    # probably divided by the number of phrases
+    joint_ennl = defaultdict(float)
     nl_given_en = defaultdict(lambda: defaultdict(float))
     en_given_nl = defaultdict(lambda: defaultdict(float))
     for sent in aligned_sent:
@@ -53,7 +54,7 @@ def parse_phrases(aligned_sent, max_len=4):
                 # E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl)
                 E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl, aligned)
                 for elem in E:
-                    # joint_probs[elem] += 1/len(aligned_sent)
+                    joint_ennl[elem] += 1
                     nl_given_en[elem[1]][elem[0]] += 1
                     en_given_nl[elem[0]][elem[1]] += 1
 
@@ -70,21 +71,11 @@ def parse_phrases(aligned_sent, max_len=4):
         for key2 in nl_given_en[key]:
             nl_given_en[key][key2] /= denom_nl
 
-    for key in en_given_nl:
-        for key2 in en_given_nl[key]:
-            print key, '#', key2, ':', en_given_nl[key][key2]
+    # normalize the joint
+    for key in joint_ennl:
+        joint_ennl[key] /= len(phrase_pairs)
 
-    print
-
-    for key in nl_given_en:
-        for key2 in nl_given_en[key]:
-            print key, '#', key2, ':', nl_given_en[key][key2]
-    # for elem in phrase_pairs:
-    #     print elem[0], '#',  elem[1]
-    # for key in joint_probs:
-    #         print key, joint_probs[key]
-
-    return phrase_pairs, en_given_nl, nl_given_en
+    return phrase_pairs, en_given_nl, nl_given_en, joint_ennl
 
 
 # def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl):
@@ -132,4 +123,20 @@ if __name__ == '__main__':
     how_many = 1
     max_len = 4
     aligned_sent = parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
-    parse_phrases(aligned_sent, max_len=max_len)
+    phrase_pairs, en_given_nl, nl_given_en, joint_ennl = parse_phrases(aligned_sent, max_len=max_len)
+
+    print 'P(en|nl)'
+    for key in en_given_nl:
+        for key2 in en_given_nl[key]:
+            print key, '#', key2, ':', en_given_nl[key][key2]
+
+    print
+    print 'P(nl|en)'
+    for key in nl_given_en:
+        for key2 in nl_given_en[key]:
+            print key, '#', key2, ':', nl_given_en[key][key2]
+
+    print
+    print 'P(en, nl)'
+    for key in joint_ennl:
+        print key, ':', joint_ennl[key]
