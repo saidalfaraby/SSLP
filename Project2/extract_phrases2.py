@@ -34,6 +34,11 @@ def parse_aligned_sent(path_en, path_nl, path_al, how_many):
 
 def parse_phrases(aligned_sent, max_len=4):
     phrase_pairs = set()
+    # how to estimate the joint probability?
+    # number of occurences of the phrase, divided by the number of sentences?
+    # joint_probs = defaultdict(float)
+    nl_given_en = defaultdict(lambda: defaultdict(float))
+    en_given_nl = defaultdict(lambda: defaultdict(float))
     for sent in aligned_sent:
         aligned = defaultdict(lambda: False)
         for e_start in xrange(len(sent.w_nl)):
@@ -47,12 +52,39 @@ def parse_phrases(aligned_sent, max_len=4):
                 # print 'f_start', f_start, 'f_end', f_end, 'e_start', e_start, 'e_end', e_end
                 # E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl)
                 E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl, aligned)
+                for elem in E:
+                    # joint_probs[elem] += 1/len(aligned_sent)
+                    nl_given_en[elem[1]][elem[0]] += 1
+                    en_given_nl[elem[0]][elem[1]] += 1
+
                 phrase_pairs.update(E)
 
-    for elem in phrase_pairs:
-        print elem[0], '#',  elem[1]
+    # normalize the conditionals
+    for key in en_given_nl:
+        denom_en = sum([en_given_nl[key][key2] for key2 in en_given_nl[key]])
+        for key2 in en_given_nl[key]:
+            en_given_nl[key][key2] /= denom_en
 
-    return phrase_pairs
+    for key in nl_given_en:
+        denom_nl = sum([nl_given_en[key][key2] for key2 in nl_given_en[key]])
+        for key2 in nl_given_en[key]:
+            nl_given_en[key][key2] /= denom_nl
+
+    for key in en_given_nl:
+        for key2 in en_given_nl[key]:
+            print key, '#', key2, ':', en_given_nl[key][key2]
+
+    print
+
+    for key in nl_given_en:
+        for key2 in nl_given_en[key]:
+            print key, '#', key2, ':', nl_given_en[key][key2]
+    # for elem in phrase_pairs:
+    #     print elem[0], '#',  elem[1]
+    # for key in joint_probs:
+    #         print key, joint_probs[key]
+
+    return phrase_pairs, en_given_nl, nl_given_en
 
 
 # def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl):
