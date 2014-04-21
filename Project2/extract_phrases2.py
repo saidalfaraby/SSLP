@@ -50,10 +50,8 @@ def parse_phrases(aligned_sent, max_len=4):
                 phrase_pairs.update(E)
 
     for elem in phrase_pairs:
-        pair = elem.split('#')
-        for i in pair:
-            print i
-        print
+        print elem[0], '#',  elem[1]
+
     return phrase_pairs
 
 
@@ -79,7 +77,7 @@ def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl, aligned):
         f_e = f_end
         while True:
             #if abs(e_start - e_end) <= 3:
-            E.add(' '.join(w_nl[e_start:e_end+1]) + ' # ' + ' '.join(w_en[f_s:f_e+1]))
+            E.add((' '.join(w_nl[e_start:e_end+1]), ' '.join(w_en[f_s:f_e+1])))
             # aligned_fe[f_e] = True
             f_e += 1
             # if aligned_fe[f_e] or f_e == len(w_en):
