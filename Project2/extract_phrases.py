@@ -26,13 +26,15 @@ def parse_aligned_sent(path_en, path_nl, path_al, how_many):
                     aligned_sent.append(AlignedSentences(w_en, w_nl, w_al))
 
                     so_far += 1
-                    if so_far == how_many:
-                        break
+                    if how_many is not 'all':
+                        if so_far == how_many:
+                            break
 
     return aligned_sent
 
 
 def parse_phrases(aligned_sent, max_len=4):
+    print 'Parsing phrases...'
     phrase_pairs = set()
     # how to estimate the joint probability?
     # number of occurences of the phrase, divided by the number of sentences?
@@ -40,7 +42,9 @@ def parse_phrases(aligned_sent, max_len=4):
     joint_ennl = defaultdict(float)
     nl_given_en = defaultdict(lambda: defaultdict(float))
     en_given_nl = defaultdict(lambda: defaultdict(float))
+    cnt = 1
     for sent in aligned_sent:
+        print cnt, 'out of', len(aligned_sent)
         aligned = defaultdict(lambda: False)
         for e_start in xrange(len(sent.w_nl)):
             for e_end in xrange(e_start, e_start + max_len):
@@ -59,6 +63,7 @@ def parse_phrases(aligned_sent, max_len=4):
                     en_given_nl[elem[0]][elem[1]] += 1
 
                 phrase_pairs.update(E)
+        cnt += 1
 
     # normalize the conditionals
     for key in en_given_nl:
@@ -120,23 +125,23 @@ if __name__ == '__main__':
     en_corp = 'p2_training.en'
     nl_corp = 'p2_training.nl'
     al_corp = 'p2_training_symal.nlen'
-    how_many = 1
+    how_many = 'all'
     max_len = 4
     aligned_sent = parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
     phrase_pairs, en_given_nl, nl_given_en, joint_ennl = parse_phrases(aligned_sent, max_len=max_len)
 
-    print 'P(en|nl)'
-    for key in en_given_nl:
-        for key2 in en_given_nl[key]:
-            print key, '#', key2, ':', en_given_nl[key][key2]
+    # print 'P(en|nl)'
+    # for key in en_given_nl:
+    #     for key2 in en_given_nl[key]:
+    #         print key, '#', key2, ':', en_given_nl[key][key2]
 
-    print
-    print 'P(nl|en)'
-    for key in nl_given_en:
-        for key2 in nl_given_en[key]:
-            print key, '#', key2, ':', nl_given_en[key][key2]
+    # print
+    # print 'P(nl|en)'
+    # for key in nl_given_en:
+    #     for key2 in nl_given_en[key]:
+    #         print key, '#', key2, ':', nl_given_en[key][key2]
 
-    print
-    print 'P(en, nl)'
-    for key in joint_ennl:
-        print key, ':', joint_ennl[key]
+    # print
+    # print 'P(en, nl)'
+    # for key in joint_ennl:
+    #     print key, ':', joint_ennl[key]
