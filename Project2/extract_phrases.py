@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 from collections import defaultdict
+import dill as pickle
 
 
 class AlignedSentences(object):
@@ -33,7 +34,7 @@ def parse_aligned_sent(path_en, path_nl, path_al, how_many):
     return aligned_sent
 
 
-def parse_phrases(aligned_sent, max_len=4):
+def parse_phrases(aligned_sent, max_len=4, saving=False, folder=None):
     print 'Parsing phrases...'
     phrase_pairs = set()
     # how to estimate the joint probability?
@@ -80,6 +81,9 @@ def parse_phrases(aligned_sent, max_len=4):
     for key in joint_ennl:
         joint_ennl[key] /= len(phrase_pairs)
 
+    if saving:
+        save_phrases(phrase_pairs, en_given_nl, nl_given_en, joint_ennl, folder)
+
     return phrase_pairs, en_given_nl, nl_given_en, joint_ennl
 
 
@@ -119,6 +123,34 @@ def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl, aligned):
 
     return E
 
+
+def save_phrases(phrase_pairs, en_given_nl, nl_given_en, joint_ennl, folder):
+    print 'Saving...'
+    with open(folder+'phrase_pairs.pickle', 'wb') as handle:
+        pickle.dump(phrase_pairs, handle)
+    with open(folder+'en_given_nl.pickle', 'wb') as handle:
+        pickle.dump(en_given_nl, handle)
+    with open(folder+'nl_given_en.pickle', 'wb') as handle:
+        pickle.dump(nl_given_en, handle)
+    with open(folder+'joint_ennl.pickle', 'wb') as handle:
+        pickle.dump(joint_ennl, handle)
+    print 'Saved.'
+
+
+def load_phrases(folder):
+    print 'Loading...'
+    with open(folder+'phrase_pairs.pickle', 'rb') as handle:
+        phrase_pairs = pickle.load(handle)
+    with open(folder+'en_given_nl.pickle', 'rb') as handle:
+        en_given_nl = pickle.load(handle)
+    with open(folder+'nl_given_en.pickle', 'rb') as handle:
+        nl_given_en = pickle.load(handle)
+    with open(folder+'joint_ennl.pickle', 'rb') as handle:
+        joint_ennl = pickle.load(handle)
+    print 'Loaded.'
+
+    return phrase_pairs, en_given_nl, nl_given_en, joint_ennl
+
 if __name__ == '__main__':
 
     folder = 'training/'
@@ -128,7 +160,7 @@ if __name__ == '__main__':
     how_many = 'all'
     max_len = 4
     aligned_sent = parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
-    phrase_pairs, en_given_nl, nl_given_en, joint_ennl = parse_phrases(aligned_sent, max_len=max_len)
+    phrase_pairs, en_given_nl, nl_given_en, joint_ennl = parse_phrases(aligned_sent, max_len=max_len, saving=False, folder=folder)
 
     # print 'P(en|nl)'
     # for key in en_given_nl:
