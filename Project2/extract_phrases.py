@@ -57,7 +57,7 @@ def parse_phrases(aligned_sent, max_len=4, saving=False, folder=None):
                         f_end = max(f, f_end)
                 # print 'f_start', f_start, 'f_end', f_end, 'e_start', e_start, 'e_end', e_end
                 # E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl)
-                E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl, aligned)
+                E = extract(f_start, f_end, e_start, e_end, sent.al, sent.w_en, sent.w_nl, aligned, max_len)
                 for elem in E:
                     joint_ennl[elem] += 1
                     nl_given_en[elem[1]][elem[0]] += 1
@@ -88,7 +88,7 @@ def parse_phrases(aligned_sent, max_len=4, saving=False, folder=None):
 
 
 # def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl):
-def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl, aligned):
+def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl, aligned, max_len):
     # print f_start, f_end, e_start, e_end
     # aligned_fe = defaultdict(lambda: False)
     # aligned_fs = defaultdict(lambda: False)
@@ -108,8 +108,8 @@ def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl, aligned):
     while True:
         f_e = f_end
         while True:
-            #if abs(e_start - e_end) <= 3:
-            E.add((' '.join(w_nl[e_start:e_end+1]), ' '.join(w_en[f_s:f_e+1])))
+            if abs(f_s - f_e) <= max_len - 1:
+                E.add((' '.join(w_nl[e_start:e_end+1]), ' '.join(w_en[f_s:f_e+1])))
             # aligned_fe[f_e] = True
             f_e += 1
             # if aligned_fe[f_e] or f_e == len(w_en):
@@ -126,26 +126,26 @@ def extract(f_start, f_end, e_start, e_end, w_a, w_en, w_nl, aligned):
 
 def save_phrases(phrase_pairs, en_given_nl, nl_given_en, joint_ennl, folder):
     print 'Saving...'
-    with open(folder+'phrase_pairs.pickle', 'wb') as handle:
+    with open(folder+'phrase_pairs_.pickle', 'wb') as handle:
         pickle.dump(phrase_pairs, handle)
-    with open(folder+'en_given_nl.pickle', 'wb') as handle:
+    with open(folder+'en_given_nl_.pickle', 'wb') as handle:
         pickle.dump(en_given_nl, handle)
-    with open(folder+'nl_given_en.pickle', 'wb') as handle:
+    with open(folder+'nl_given_en_.pickle', 'wb') as handle:
         pickle.dump(nl_given_en, handle)
-    with open(folder+'joint_ennl.pickle', 'wb') as handle:
+    with open(folder+'joint_ennl_.pickle', 'wb') as handle:
         pickle.dump(joint_ennl, handle)
     print 'Saved.'
 
 
 def load_phrases(folder):
     print 'Loading...'
-    with open(folder+'phrase_pairs.pickle', 'rb') as handle:
+    with open(folder+'phrase_pairs_.pickle', 'rb') as handle:
         phrase_pairs = pickle.load(handle)
-    with open(folder+'en_given_nl.pickle', 'rb') as handle:
+    with open(folder+'en_given_nl_.pickle', 'rb') as handle:
         en_given_nl = pickle.load(handle)
-    with open(folder+'nl_given_en.pickle', 'rb') as handle:
+    with open(folder+'nl_given_en_.pickle', 'rb') as handle:
         nl_given_en = pickle.load(handle)
-    with open(folder+'joint_ennl.pickle', 'rb') as handle:
+    with open(folder+'joint_ennl_.pickle', 'rb') as handle:
         joint_ennl = pickle.load(handle)
     print 'Loaded.'
 
@@ -162,6 +162,8 @@ if __name__ == '__main__':
     aligned_sent = parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
     phrase_pairs, en_given_nl, nl_given_en, joint_ennl = parse_phrases(aligned_sent, max_len=max_len, saving=False, folder=folder)
 
+    for elem in phrase_pairs:
+        print elem
     # print 'P(en|nl)'
     # for key in en_given_nl:
     #     for key2 in en_given_nl[key]:
