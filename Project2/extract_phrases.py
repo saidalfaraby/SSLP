@@ -78,8 +78,9 @@ def parse_phrases(aligned_sent, max_len=4, saving=False, folder=None):
             nl_given_en[key][key2] /= denom_nl
 
     # normalize the joint
+    denom_joint = sum([joint_ennl[key] for key in joint_ennl])
     for key in joint_ennl:
-        joint_ennl[key] /= len(phrase_pairs)
+        joint_ennl[key] /= denom_joint
 
     if saving:
         save_phrases(phrase_pairs, en_given_nl, nl_given_en, joint_ennl, folder)
