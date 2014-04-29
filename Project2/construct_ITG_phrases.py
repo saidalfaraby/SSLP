@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import permutations
 
 
 class Node (object):
@@ -15,8 +16,13 @@ class Combo(object):
 		self.combos = set()
 
 	def update_combos(self, new_combos):
-		new_combos = {' '.join(map(str, i)) for i in new_combos}
-		self.combos.update(new_combos)
+		self.combos.update({' '.join(map(str, i)) for i in new_combos})
+
+	def generate_all_combos(self):
+		self.all = set()
+		y = [map(int, i.split()) for i in self.combos]
+		for elem in y:
+			self.all.update(permutations(elem))
 
 
 # string = ''
@@ -123,6 +129,7 @@ def find_combos(N):
 		for k in xrange(int(N/i)):
 			elements.append(i)
 	subset_sum(elements, N, cmb)
+	cmb.generate_all_combos()
 	return cmb
 
 
@@ -152,5 +159,5 @@ if __name__ == '__main__':
 	# for s in allString:
 	# 	print s
 	cmb = find_combos(4)
-	print cmb.combos
+	print cmb.all
 	# print cmb.combos
