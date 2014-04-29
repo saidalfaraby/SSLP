@@ -10,6 +10,15 @@ class Node (object):
 		self.right = None
 
 
+class Combo(object):
+	def __init__(self):
+		self.combos = set()
+
+	def update_combos(self, new_combos):
+		new_combos = {' '.join(map(str, i)) for i in new_combos}
+		self.combos.update(new_combos)
+
+
 # string = ''
 def printTree(T):
 	def recur(T):
@@ -92,6 +101,31 @@ def construct_itg_phrases(all_phrase_pairs):
 			pass
 
 
+def find_combos(N):
+	def subset_sum(numbers, target, cmb, partial=[], so_far=[]):
+		s = sum(partial)
+		# check if the partial sum is equals to target
+		if s == target:
+			so_far.append(partial)
+			cmb.update_combos(so_far)
+			# print "sum(%s)=%s" % (partial, target)
+		if s >= target:
+			return  # if we reach the number why bother to continue
+		for i in range(len(numbers)):
+			n = numbers[i]
+			remaining = numbers[i+1:]
+			subset_sum(remaining, target, cmb, partial + [n], so_far)
+		#print [map(' '.join, i) for i in so_far]
+
+	cmb = Combo()
+	elements = []
+	for i in xrange(1, N):
+		for k in xrange(int(N/i)):
+			elements.append(i)
+	subset_sum(elements, N, cmb)
+	return cmb
+
+
 def test():
 	def findAllSumTo(N):
 		if N == 0:
@@ -99,11 +133,11 @@ def test():
 		else:
 			choose = []
 			for j in range(1, N+1):
-				# choose.append(j)
+				choose.append(j)
 				N -= j
 				for i in findAllSumTo(N):
 					print i
-					choose.append(i.append(j))
+					#choose.append(i.append(j))
 			return choose
 
 	t = findAllSumTo(4)
@@ -117,4 +151,6 @@ if __name__ == '__main__':
 	# print len(allString)
 	# for s in allString:
 	# 	print s
-	test()
+	cmb = find_combos(4)
+	print cmb.combos
+	# print cmb.combos
