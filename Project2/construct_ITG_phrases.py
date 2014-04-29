@@ -103,7 +103,7 @@ def test():
 	t = findAllSumTo(4)
 	print len(t)
 	for i in t:
-		print i
+		print i 
 
 
 
