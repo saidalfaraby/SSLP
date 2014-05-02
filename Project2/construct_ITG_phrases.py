@@ -84,7 +84,7 @@ def permut_phrases(phrase_pairs, itg_permut):
 	return set(all_permuted)
 
 
-def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table):
+def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold=100):
 	'''
 	return dictionary with length as key and list of phrase_pairs as value
 	we will take max length between english and foreign phrase
@@ -93,24 +93,31 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table):
 
 	div_phrases = defaultdict(list)
 
-	max_prob_per_length = defaultdict(lambda : 0)
-	sum_prob_per_length = defaultdict(list)
-	for pp in joint_phrase_table:
-		l = max(len(pp[0].split()), len(pp[1].split()))
-		# if joint_phrase_table[pp]>= max_prob_per_length[l]:
-			# max_prob_per_length[l] = joint_phrase_table[pp]
-		sum_prob_per_length[l].append(joint_phrase_table[pp])
-	for k in sum_prob_per_length:
-		max_prob_per_length[k] = sum(sum_prob_per_length[k])/len(sum_prob_per_length[k])
+	if threshold=='average':
+		max_prob_per_length = defaultdict(lambda : 0)
+		sum_prob_per_length = defaultdict(list)
+		for pp in joint_phrase_table:
+			l = max(len(pp[0].split()), len(pp[1].split()))
+			sum_prob_per_length[l].append(joint_phrase_table[pp])
+		for k in sum_prob_per_length:
+			max_prob_per_length[k] = sum(sum_prob_per_length[k])/len(sum_prob_per_length[k])
+		print 'max prob per length', max_prob_per_length
+		for p in all_phrase_pairs:
+			pl = max(len(p[0].split()), len(p[1].split()))
+			if joint_phrase_table[p]>= max_prob_per_length[pl]:
+				div_phrases[pl].append(p)
+	elif isinstance(threshold,int):
+		#take top threshold most probable phrases for each length
+		topThreshold = defaultdict(list)
+		for pp in joint_phrase_table:
+			l = max(len(pp[0].split()), len(pp[1].split()))
+			topThreshold[l].append((pp,joint_phrase_table[pp]))
+			topThreshold[l]= sorted(topThreshold[l],key=lambda x: x[1])
+			topThreshold[l] = topThreshold[l][:threshold]
+		for l in topThreshold:
+			for p in topThreshold[l]:
+				div_phrases[l].append(p[0])
 
-
-	print 'max prob per length', max_prob_per_length
-
-
-	for p in all_phrase_pairs:
-		pl = max(len(p[0].split()), len(p[1].split()))
-		if joint_phrase_table[p]>= max_prob_per_length[pl]:
-			div_phrases[pl].append(p)
 	le = [len(div_phrases[l]) for l in div_phrases]
 	print 'for all length ',le
 	print 'sum of all length ', sum(le)
@@ -154,7 +161,7 @@ def save_phrases(phrase_pairs, folder=''):
         pickle.dump(phrase_pairs, handle)
 
 def getAllLengthComb(maxLength):
-	print 'construct all possible length combinations ...'
+	print 'construct all possible length combinations of length ',maxLength
 # def all_length_comb(Length):
 	def findAllSumTo(N):
 		final = []
@@ -206,7 +213,7 @@ def getAllLengthComb(maxLength):
 if __name__ == '__main__':
 	folder  = 'training/'
 	if len(sys.argv) > 1:
-        folder = sys.argv[1]
+		folder = sys.argv[1]
 	
 	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases(folder)
 
