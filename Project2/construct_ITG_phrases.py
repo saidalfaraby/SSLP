@@ -3,6 +3,7 @@ from extract_phrases import load_phrases
 from itertools import permutations, product
 import dill as pickle
 import sys
+import time
 
 
 
@@ -41,7 +42,7 @@ def getITGPermut(lb, ub):
 	ub : upper bound of permuting integer
 	return set of itg-constrained string
 	'''
-	print 'construct ITG permutation of length ',ub
+	log('construct ITG permutation of length '+str(ub))
 	def recur(start, end):
 		if end - start <= 1:
 			return [Node(start)]
@@ -89,7 +90,7 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold=
 	return dictionary with length as key and list of phrase_pairs as value
 	we will take max length between english and foreign phrase
 	'''
-	print 'devide phrase pairs according to length ...'
+	log('devide phrase pairs according to length ...')
 
 	div_phrases = defaultdict(list)
 
@@ -101,7 +102,7 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold=
 			sum_prob_per_length[l].append(joint_phrase_table[pp])
 		for k in sum_prob_per_length:
 			max_prob_per_length[k] = sum(sum_prob_per_length[k])/len(sum_prob_per_length[k])
-		print 'max prob per length', max_prob_per_length
+		log('max prob per length'+str(max_prob_per_length))
 		for p in all_phrase_pairs:
 			pl = max(len(p[0].split()), len(p[1].split()))
 			if joint_phrase_table[p]>= max_prob_per_length[pl]:
@@ -119,13 +120,15 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold=
 				div_phrases[l].append(p[0])
 
 	le = [len(div_phrases[l]) for l in div_phrases]
-	print 'for all length ',le
-	print 'sum of all length ', sum(le)
-	print 'original phrases length ', len(all_phrase_pairs)
+	log('for all length '+str(le))
+	log('sum of all length '+str(sum(le)))
+	log('original phrases length '+str(len(all_phrase_pairs)))
 	return div_phrases
 
 
 def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, max_length = 4):
+	st = time.time()
+	log('construct ITG phrases with threshold='+str(threshold)+' and max_length='+str(max_length))
 	div_phrases = devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold)
 	#find all combination of length that sum to 2 up to max_length
 	
@@ -139,29 +142,39 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, m
 		length_dict[len(lc)].append(lc)
 
 	#there is a more efficient way by using smaller part, but going for correctness first
-	print 'start combining phrases with ITG-permutation ...'
+	log('start combining phrases with ITG-permutation ...')
 	for l in length_dict:
 		itgPermut = getITGPermut(0,l)
 		for c in length_dict[l]:
-			print 'processing combination of : ',c
+			log('processing combination of : '+str(c))
+			setC = set()
 			temp =[range(len(div_phrases[u])) for u in c]
 			indices_of_u = product(*temp)
 			for i in indices_of_u:
 				list_phrases = []
 				for ii in range(len(i)):
 					list_phrases.append(div_phrases[c[ii]][i[ii]])
-				all_phrase_pairs.update(permut_phrases(list_phrases, itgPermut))
-	print 'New phrases size : ',len(all_phrase_pairs)
+				setC.update(permut_phrases(list_phrases, itgPermut))
+			log('number of combined phrases : '+str(len(setC)))
+			all_phrase_pairs.update(setC)
+	log('New phrases size : '+str(len(all_phrase_pairs)))
+	log('Time to construct itg phrases : '+str(time.time()-st))
 	return all_phrase_pairs
 					
 
 def save_phrases(phrase_pairs, folder=''):
-    print 'Saving...'
+    log('Saving...')
     with open(folder+'combined_phrase_pairs_.pickle', 'wb') as handle:
         pickle.dump(phrase_pairs, handle)
 
+def log(string):
+	f = open('log.txt', 'a+')
+	print string
+	f.write(string+'\n')
+	f.close()
+
 def getAllLengthComb(maxLength):
-	print 'construct all possible length combinations of length ',maxLength
+	log('construct all possible length combinations of length '+str(maxLength))
 # def all_length_comb(Length):
 	def findAllSumTo(N):
 		final = []
@@ -206,7 +219,7 @@ def getAllLengthComb(maxLength):
 	allComb = []
 	for t in tree :
 		allComb += getAllPath(t)
-	print 'return all length combinations ...'
+	log('return all length combinations ...')
 	return allComb
 
 
@@ -214,8 +227,8 @@ if __name__ == '__main__':
 	folder  = 'training/'
 	if len(sys.argv) > 1:
 		folder = sys.argv[1]
-	
+	log('load file from folder : '+folder)
 	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases(folder)
-
-	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl, threshold=1000)
+	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl, threshold=5, max_length=3)
 	save_phrases(combined_phrase_pairs, folder)
+	log('--------------------------------\n\n')
