@@ -2,6 +2,7 @@ from collections import defaultdict
 from extract_phrases import load_phrases
 from itertools import permutations, product
 import dill as pickle
+import sys
 
 
 
@@ -203,17 +204,10 @@ def getAllLengthComb(maxLength):
 
 
 if __name__ == '__main__':
-	# allString = getITGPermut(1,5)
-	# print len(allString)
-	# for s in allString:
-	# 	print s
-	# t = findAllSumTo(4)
-	# print len(t)
-	# test = []
-	# for i in t:
-	# 	test+=printTest(i)
-	# print test
 	folder  = 'training/'
+	if len(sys.argv) > 1:
+        folder = sys.argv[1]
+	
 	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases(folder)
 
 	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl)
