@@ -125,8 +125,8 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold=
 	return div_phrases
 
 
-def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, max_length = 4):
-	div_phrases = devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table)
+def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, max_length = 4):
+	div_phrases = devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold)
 	#find all combination of length that sum to 2 up to max_length
 	
 	length_combinations = []
@@ -217,5 +217,5 @@ if __name__ == '__main__':
 	
 	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases(folder)
 
-	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl)
+	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl, threshold=1000)
 	save_phrases(combined_phrase_pairs, folder)
