@@ -40,6 +40,7 @@ def getITGPermut(lb, ub):
 	ub : upper bound of permuting integer
 	return set of itg-constrained string
 	'''
+	print 'construct ITG permutation of length ',ub
 	def recur(start, end):
 		if end - start <= 1:
 			return [Node(start)]
@@ -87,6 +88,8 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table):
 	return dictionary with length as key and list of phrase_pairs as value
 	we will take max length between english and foreign phrase
 	'''
+	print 'devide phrase pairs according to length ...'
+
 	div_phrases = defaultdict(list)
 
 	max_prob_per_length = defaultdict(lambda : 0)
@@ -117,6 +120,7 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table):
 def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, max_length = 4):
 	div_phrases = devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table)
 	#find all combination of length that sum to 2 up to max_length
+	
 	length_combinations = []
 	for l in range(2, max_length+1):
 		length_combinations += getAllLengthComb(l)
@@ -127,10 +131,11 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, max_length = 4):
 		length_dict[len(lc)].append(lc)
 
 	#there is a more efficient way by using smaller part, but going for correctness first
+	print 'start combining phrases with ITG-permutation ...'
 	for l in length_dict:
 		itgPermut = getITGPermut(0,l)
 		for c in length_dict[l]:
-			print 'process combination of : ',
+			print 'processing combination of : ',c
 			temp =[range(len(div_phrases[u])) for u in c]
 			indices_of_u = product(*temp)
 			for i in indices_of_u:
@@ -148,6 +153,7 @@ def save_phrases(phrase_pairs, folder=''):
         pickle.dump(phrase_pairs, handle)
 
 def getAllLengthComb(maxLength):
+	print 'construct all possible length combinations ...'
 # def all_length_comb(Length):
 	def findAllSumTo(N):
 		final = []
@@ -192,6 +198,7 @@ def getAllLengthComb(maxLength):
 	allComb = []
 	for t in tree :
 		allComb += getAllPath(t)
+	print 'return all length combinations ...'
 	return allComb
 
 
