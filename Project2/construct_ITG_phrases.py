@@ -1,5 +1,8 @@
 from collections import defaultdict
 from extract_phrases import load_phrases
+from itertools import permutations, product
+import dill as pickle
+
 
 
 class Node (object):
@@ -74,9 +77,9 @@ def permut_phrases(phrase_pairs, itg_permut):
 		itglist = itg.split()
 		for i in range(len(itglist)):
 			left.append(phrase_pairs[i][0])
-			right[itglist[i]] = phrase_pairs[i][1]
-		all_permuted.append((' '.join(left), ' '.joint(right)))
-	return all_permuted
+			right[int(itglist[i])] = phrase_pairs[i][1]
+		all_permuted.append((' '.join(left), ' '.join(right)))
+	return set(all_permuted)
 
 
 def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table):
@@ -107,13 +110,12 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table):
 	le = [len(div_phrases[l]) for l in div_phrases]
 	print 'for all length ',le
 	print 'sum of all length ', sum(le)
-	print 'original length ', len(all_phrase_pairs)
+	print 'original phrases length ', len(all_phrase_pairs)
 	return div_phrases
 
 
-def construct_itg_phrases(all_phrase_pairs):
-	div_phrases = devide_phrases_accto_length(all_phrase_pairs)
-	max_length = 4
+def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, max_length = 4):
+	div_phrases = devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table)
 	#find all combination of length that sum to 2 up to max_length
 	length_combinations = []
 	for l in range(2, max_length+1):
@@ -125,11 +127,25 @@ def construct_itg_phrases(all_phrase_pairs):
 		length_dict[len(lc)].append(lc)
 
 	#there is a more efficient way by using smaller part, but going for correctness first
-	for l in length_dict.keys():
+	for l in length_dict:
 		itgPermut = getITGPermut(0,l)
 		for c in length_dict[l]:
-			pass
+			print 'process combination of : ',
+			temp =[range(len(div_phrases[u])) for u in c]
+			indices_of_u = product(*temp)
+			for i in indices_of_u:
+				list_phrases = []
+				for ii in range(len(i)):
+					list_phrases.append(div_phrases[c[ii]][i[ii]])
+				all_phrase_pairs.update(permut_phrases(list_phrases, itgPermut))
+	print 'New phrases size : ',len(all_phrase_pairs)
+	return all_phrase_pairs
+					
 
+def save_phrases(phrase_pairs, folder=''):
+    print 'Saving...'
+    with open(folder+'combined_phrase_pairs_.pickle', 'wb') as handle:
+        pickle.dump(phrase_pairs, handle)
 
 def getAllLengthComb(maxLength):
 # def all_length_comb(Length):
@@ -190,13 +206,8 @@ if __name__ == '__main__':
 	# for i in t:
 	# 	test+=printTest(i)
 	# print test
+	folder  = 'training/'
+	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases(folder)
 
-	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases('training/')
-
-	devide_phrases_accto_length(phrase_pairs, joint_ennl)
-
-	t =getAllLengthComb(4)
-	print t
-
-	t = getITGPermut(0,4)
-	print t
+	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl)
+	save_phrases(combined_phrase_pairs, folder)
