@@ -1,5 +1,7 @@
+from __future__ import division
 import extract_phrases as ep
 from extract_phrases import AlignedSentences
+import gzip
 
 
 def measure_exact(train_phrases, heldout_phrases, max_len=4):
@@ -19,12 +21,31 @@ def measure_exact(train_phrases, heldout_phrases, max_len=4):
     return sparsity
 
 
-if __name__ == '__main__':
+def pr_vs_moses(path_moses, ours):
+    moses_phrases = set()
+    with open(path_moses, 'rb') as moses:
+        for line in moses.readlines():
+            moses_phrases.add(tuple([elem.strip(' ') for elem in line.split('|||')[0:2]]))
+
+    precision = len(moses_phrases.intersection(ours))/len(ours)
+    recall = len(moses_phrases.intersection(ours))/len(moses_phrases)
+
+    return precision, recall
+
+
+def get_phrases(folder, en_corp, nl_corp, al_corp, how_many, max_len=4):
+    aligned_sent_train = ep.parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
+    phrase_pairs_train, en_given_nl_train, nl_given_en_train, joint_ennl_train = ep.parse_phrases(aligned_sent_train, max_len=max_len, saving=True, folder=folder)
+
+    return phrase_pairs_train
+
+
+def test():
     folder = 'heldout/'
     en_corp = 'p2_heldout.en'
     nl_corp = 'p2_heldout.nl'
     al_corp = 'p2_heldout_symal.nlen'
-    how_many = 'all'
+    how_many = 5
     max_len = 4
 
     aligned_sent_held = ep.parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
@@ -47,3 +68,10 @@ if __name__ == '__main__':
         print 'In train and not in heldout:', len(ex_sparsity[i][1])
         print 'In heldout and not in train:', len(ex_sparsity[i][2])
         print
+
+
+if __name__ == '__main__':
+
+    ours = get_phrases('training/', 'p2_training.en', 'p2_training.nl', 'p2_training_symal.nlen', 5)
+    precision, recall = pr_vs_moses('phrase-table', ours)
+    print 'Precision:', precision, 'Recall:', recall
