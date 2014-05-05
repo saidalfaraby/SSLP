@@ -2,6 +2,7 @@ from __future__ import division
 import extract_phrases as ep
 from extract_phrases import AlignedSentences
 import gzip
+import dill as pickle
 
 
 def measure_exact(train_phrases, heldout_phrases, max_len=4):
@@ -70,8 +71,52 @@ def test():
         print
 
 
+def test_2():
+    folder = 'heldout/'
+    en_corp = 'p2_heldout.en'
+    nl_corp = 'p2_heldout.nl'
+    al_corp = 'p2_heldout_symal.nlen'
+    how_many = 'all'
+    max_len = 4
+
+    aligned_sent_held = ep.parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
+    phrase_pairs_held, en_given_nl_held, nl_given_en_held, joint_ennl_held = ep.parse_phrases(aligned_sent_held, max_len=max_len, saving=True, folder=folder)
+
+    with open('/home/said/git/SSLP/Project2/training/phrase_pairs_.pickle') as handle:
+        reg_phrase_pairs = pickle.load(handle)
+
+    with open('/home/said/git/SSLP/Project2/training/combined_phrase_pairs_.pickle') as handle:
+        comb_phrase_pairs = pickle.load(handle)
+
+    ex_sparsity = measure_exact(reg_phrase_pairs, phrase_pairs_held, max_len=max_len)
+    print 'Regular phrase pairs:'
+    for i in xrange(len(ex_sparsity)):
+        print 'For phrases with n =', i+1
+        print 'In train and heldout:', len(ex_sparsity[i][0])
+        print 'In train and not in heldout:', len(ex_sparsity[i][1])
+        print 'In heldout and not in train:', len(ex_sparsity[i][2])
+        print
+
+    ex_sparsity = measure_exact(comb_phrase_pairs, phrase_pairs_held, max_len=max_len)
+    print 'Combined phrase pairs:'
+    for i in xrange(len(ex_sparsity)):
+        print 'For phrases with n =', i+1
+        print 'In train and heldout:', len(ex_sparsity[i][0])
+        print 'In train and not in heldout:', len(ex_sparsity[i][1])
+        print 'In heldout and not in train:', len(ex_sparsity[i][2])
+        print
+
+    print 'PR for regular:'
+    precision, recall = pr_vs_moses('phrase-table', reg_phrase_pairs)
+    print 'Precision:', precision, 'Recall:', recall
+    print
+
+    print 'PR for combined:'
+    precision, recall = pr_vs_moses('phrase-table', comb_phrase_pairs)
+    print 'Precision:', precision, 'Recall:', recall
+    print
+
+
 if __name__ == '__main__':
 
-    ours = get_phrases('training/', 'p2_training.en', 'p2_training.nl', 'p2_training_symal.nlen', 5)
-    precision, recall = pr_vs_moses('phrase-table', ours)
-    print 'Precision:', precision, 'Recall:', recall
+    test_2()
