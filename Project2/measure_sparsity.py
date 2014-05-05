@@ -82,12 +82,15 @@ def test_2():
     aligned_sent_held = ep.parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
     phrase_pairs_held, en_given_nl_held, nl_given_en_held, joint_ennl_held = ep.parse_phrases(aligned_sent_held, max_len=max_len, saving=True, folder=folder)
 
+    print 'Loading regular phrase pairs...'
     with open('/home/said/git/SSLP/Project2/training/phrase_pairs_.pickle') as handle:
         reg_phrase_pairs = pickle.load(handle)
 
+    print 'Loading combined phrase pairs...'
     with open('/home/said/git/SSLP/Project2/training/combined_phrase_pairs_.pickle') as handle:
         comb_phrase_pairs = pickle.load(handle)
 
+    print 'Measuring sparsity...'
     ex_sparsity = measure_exact(reg_phrase_pairs, phrase_pairs_held, max_len=max_len)
     print 'Regular phrase pairs:'
     for i in xrange(len(ex_sparsity)):
@@ -106,6 +109,7 @@ def test_2():
         print 'In heldout and not in train:', len(ex_sparsity[i][2])
         print
 
+    print 'Calcuating precision and recall against Moses...'
     print 'PR for regular:'
     precision, recall = pr_vs_moses('phrase-table', reg_phrase_pairs)
     print 'Precision:', precision, 'Recall:', recall
