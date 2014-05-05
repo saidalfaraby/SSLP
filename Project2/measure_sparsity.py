@@ -72,15 +72,11 @@ def test():
 
 
 def test_2():
-    folder = 'heldout/'
-    en_corp = 'p2_heldout.en'
-    nl_corp = 'p2_heldout.nl'
-    al_corp = 'p2_heldout_symal.nlen'
-    how_many = 'all'
     max_len = 4
 
-    aligned_sent_held = ep.parse_aligned_sent(folder+en_corp, folder+nl_corp, folder+al_corp, how_many)
-    phrase_pairs_held, en_given_nl_held, nl_given_en_held, joint_ennl_held = ep.parse_phrases(aligned_sent_held, max_len=max_len, saving=True, folder=folder)
+    print 'Loading heldout phrase pairs...'
+    with open('/home/christos/SSLP/Project2/heldout/phrase_pairs_.pickle') as handle:
+        phrase_pairs_held = pickle.load(handle)
 
     print 'Loading regular phrase pairs...'
     with open('/home/said/git/SSLP/Project2/training/phrase_pairs_.pickle') as handle:
