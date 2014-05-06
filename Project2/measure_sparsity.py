@@ -32,7 +32,7 @@ def pr_vs_moses_per_len(path_moses, ours, max_len=4):
     ours_per_len = []
     for i in xrange(1, max_len+1):
         moses_per_len.append({x for x in moses_phrases if len(x[0].split(' ')) == i})
-        ours_per_len.append({x for x in ours_per_len if len(x[0].split(' ')) == i})
+        ours_per_len.append({x for x in ours if len(x[0].split(' ')) == i})
 
     precision, recall = [], []
     for i in xrange(len(moses_per_len)):
