@@ -15,9 +15,9 @@ def measure_exact(train_phrases, heldout_phrases, max_len=4):
         heldout_phrases_per_len.append({x for x in heldout_phrases if len(x[0].split(' ')) == i})
 
     for i in xrange(len(train_phrases_per_len)):
-        sparsity.append((train_phrases_per_len[i].intersection(heldout_phrases_per_len[i]),
-                            train_phrases_per_len[i].difference(heldout_phrases_per_len[i]),
-                            heldout_phrases_per_len[i].difference(train_phrases_per_len[i])))
+        sparsity.append((len(train_phrases_per_len[i].intersection(heldout_phrases_per_len[i]))/len(heldout_phrases_per_len[i]),
+                            len(train_phrases_per_len[i].difference(heldout_phrases_per_len[i]))/len(train_phrases_per_len[i]),
+                            len(heldout_phrases_per_len[i].difference(train_phrases_per_len[i]))/len(heldout_phrases_per_len[i])))
 
     return sparsity
 
@@ -91,18 +91,18 @@ def test_2():
     print 'Regular phrase pairs:'
     for i in xrange(len(ex_sparsity)):
         print 'For phrases with n =', i+1
-        print 'In train and heldout:', len(ex_sparsity[i][0])
-        print 'In train and not in heldout:', len(ex_sparsity[i][1])
-        print 'In heldout and not in train:', len(ex_sparsity[i][2])
+        print 'In train and heldout:', ex_sparsity[i][0]
+        print 'In train and not in heldout:', ex_sparsity[i][1]
+        print 'In heldout and not in train:', ex_sparsity[i][2]
         print
 
     ex_sparsity = measure_exact(comb_phrase_pairs, phrase_pairs_held, max_len=max_len)
     print 'Combined phrase pairs:'
     for i in xrange(len(ex_sparsity)):
         print 'For phrases with n =', i+1
-        print 'In train and heldout:', len(ex_sparsity[i][0])
-        print 'In train and not in heldout:', len(ex_sparsity[i][1])
-        print 'In heldout and not in train:', len(ex_sparsity[i][2])
+        print 'In train and heldout:', ex_sparsity[i][0]
+        print 'In train and not in heldout:', ex_sparsity[i][1]
+        print 'In heldout and not in train:', ex_sparsity[i][2]
         print
 
     print 'Calcuating precision and recall against Moses...'
