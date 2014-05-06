@@ -22,6 +22,26 @@ def measure_exact(train_phrases, heldout_phrases, max_len=4):
     return sparsity
 
 
+def pr_vs_moses_per_len(path_moses, ours, max_len=4):
+    moses_phrases = set()
+    with open(path_moses, 'rb') as moses:
+        for line in moses.readlines():
+            moses_phrases.add(tuple([elem.strip(' ') for elem in line.split('|||')[0:2]]))
+
+    moses_per_len = []
+    ours_per_len = []
+    for i in xrange(1, max_len+1):
+        moses_per_len.append({x for x in moses_phrases if len(x[0].split(' ')) == i})
+        ours_per_len.append({x for x in ours_per_len if len(x[0].split(' ')) == i})
+
+    precision, recall = [], []
+    for i in xrange(len(moses_per_len)):
+        precision.append(len(moses_per_len[i].intersection(ours_per_len[i]))/len(ours_per_len[i]))
+        recall.append(len(moses_per_len[i].intersection(ours_per_len[i]))/len(moses_per_len[i]))
+
+    return precision, recall
+
+
 def pr_vs_moses(path_moses, ours):
     moses_phrases = set()
     with open(path_moses, 'rb') as moses:
@@ -116,6 +136,18 @@ def test_2():
     print 'Precision:', precision, 'Recall:', recall
     print
 
+    print 'Calcuating precision and recall against Moses per length...'
+    print 'PR for regular:'
+    precision, recall = pr_vs_moses_per_len('phrase-table', reg_phrase_pairs)
+    for i in xrange(len(precision)):
+        print 'n=', i+1, ':', 'Precision:', precision[i], 'Recall:', recall[i]
+    print
+
+    print 'PR for combined:'
+    precision, recall = pr_vs_moses_per_len('phrase-table', comb_phrase_pairs)
+    for i in xrange(len(precision)):
+        print 'n=', i+1, ':', 'Precision:', precision[i], 'Recall:', recall[i]
+    print
 
 if __name__ == '__main__':
 
