@@ -123,6 +123,14 @@ def devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold=
 	log('for all length '+str(le))
 	log('sum of all length '+str(sum(le)))
 	log('original phrases length '+str(len(all_phrase_pairs)))
+	f = open('chosen_phrases.txt', 'a+')
+	for l in div_phrases:
+		f.write("Phrases of length : "+str(l)+'\n')
+		f.write("-------------------------\n")
+		for i in div_phrases[l]:
+			f.write(str(i)+'\n')
+		f.write('\n\n')
+	f.close()
 	return div_phrases
 
 
@@ -159,7 +167,7 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, m
 			all_phrase_pairs.update(setC)
 	log('New phrases size : '+str(len(all_phrase_pairs)))
 	log('Time to construct itg phrases : '+str(time.time()-st))
-	return all_phrase_pairs
+	return setC
 					
 
 def save_phrases(phrase_pairs, folder=''):
@@ -182,7 +190,7 @@ def getAllLengthComb(maxLength):
 		for j in ind:
 			choose = Array(j)
 			Next = N-j
-			if N > 0:
+			if Next > 0:
 				ss =findAllSumTo(Next)
 				for i in ss: 
 					choose.children.append(i)
@@ -192,6 +200,7 @@ def getAllLengthComb(maxLength):
 		# return findAllSumTo(Length)
 
 	tree = findAllSumTo(maxLength)
+	
 
 	def getAllPath(T):
 		allLeaves = []
@@ -230,5 +239,7 @@ if __name__ == '__main__':
 	log('load file from folder : '+folder)
 	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases(folder)
 	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl, threshold=5, max_length=3)
+	print combined_phrase_pairs
 	save_phrases(combined_phrase_pairs, folder)
 	log('--------------------------------\n\n')
+	# print getAllLengthComb(4)
