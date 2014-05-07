@@ -21,7 +21,7 @@ class Array(object):
 		self.label = label
 		self.children = []
 		self.parent = None
-
+		
 
 
 def printTree(T):
@@ -139,7 +139,7 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, m
 	log('construct ITG phrases with threshold='+str(threshold)+' and max_length='+str(max_length))
 	div_phrases = devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold)
 	#find all combination of length that sum to 2 up to max_length
-
+	
 	length_combinations = []
 	for l in range(2, max_length+1):
 		length_combinations += getAllLengthComb(l)
@@ -156,7 +156,11 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, m
 		for c in length_dict[l]:
 			log('processing combination of : '+str(c))
 			setC = set()
-			temp =[range(len(div_phrases[u])) for u in c]
+			temp = []
+			if l>3:
+				temp=[range(10) for u in c]
+			else :
+				temp =[range(len(div_phrases[u])) for u in c]
 			indices_of_u = product(*temp)
 			for i in indices_of_u:
 				list_phrases = []
@@ -168,7 +172,7 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, m
 	log('New phrases size : '+str(len(all_phrase_pairs)))
 	log('Time to construct itg phrases : '+str(time.time()-st))
 	return all_phrase_pairs
-
+					
 
 def save_phrases(phrase_pairs, folder=''):
     log('Saving...')
@@ -192,7 +196,7 @@ def getAllLengthComb(maxLength):
 			Next = N-j
 			if Next > 0:
 				ss =findAllSumTo(Next)
-				for i in ss:
+				for i in ss: 
 					choose.children.append(i)
 					i.parent = choose
 			final.append(choose)
@@ -200,7 +204,7 @@ def getAllLengthComb(maxLength):
 		# return findAllSumTo(Length)
 
 	tree = findAllSumTo(maxLength)
-
+	
 
 	def getAllPath(T):
 		allLeaves = []
@@ -238,7 +242,7 @@ if __name__ == '__main__':
 		folder = sys.argv[1]
 	log('load file from folder : '+folder)
 	phrase_pairs, en_given_nl, nl_given_en, joint_ennl = load_phrases(folder)
-	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl, threshold=5, max_length=3)
+	combined_phrase_pairs = construct_itg_phrases(phrase_pairs, joint_ennl, threshold=100, max_length=4)
 	print combined_phrase_pairs
 	save_phrases(combined_phrase_pairs, folder)
 	log('--------------------------------\n\n')
