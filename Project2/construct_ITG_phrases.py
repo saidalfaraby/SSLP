@@ -21,7 +21,7 @@ class Array(object):
 		self.label = label
 		self.children = []
 		self.parent = None
-		
+
 
 
 def printTree(T):
@@ -139,7 +139,7 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, m
 	log('construct ITG phrases with threshold='+str(threshold)+' and max_length='+str(max_length))
 	div_phrases = devide_phrases_accto_length(all_phrase_pairs, joint_phrase_table, threshold)
 	#find all combination of length that sum to 2 up to max_length
-	
+
 	length_combinations = []
 	for l in range(2, max_length+1):
 		length_combinations += getAllLengthComb(l)
@@ -167,8 +167,8 @@ def construct_itg_phrases(all_phrase_pairs, joint_phrase_table, threshold=100, m
 			all_phrase_pairs.update(setC)
 	log('New phrases size : '+str(len(all_phrase_pairs)))
 	log('Time to construct itg phrases : '+str(time.time()-st))
-	return setC
-					
+	return all_phrase_pairs
+
 
 def save_phrases(phrase_pairs, folder=''):
     log('Saving...')
@@ -192,7 +192,7 @@ def getAllLengthComb(maxLength):
 			Next = N-j
 			if Next > 0:
 				ss =findAllSumTo(Next)
-				for i in ss: 
+				for i in ss:
 					choose.children.append(i)
 					i.parent = choose
 			final.append(choose)
@@ -200,7 +200,7 @@ def getAllLengthComb(maxLength):
 		# return findAllSumTo(Length)
 
 	tree = findAllSumTo(maxLength)
-	
+
 
 	def getAllPath(T):
 		allLeaves = []

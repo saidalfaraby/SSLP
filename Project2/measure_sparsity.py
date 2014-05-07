@@ -103,7 +103,7 @@ def test_2():
         reg_phrase_pairs = pickle.load(handle)
 
     print 'Loading combined phrase pairs...'
-    with open('/home/said/git/SSLP/Project2/training/combined_phrase_pairs_.pickle') as handle:
+    with open('/home/said/git/SSLP/Project2/training/combined_phrase_pairs_4_10.pickle') as handle:
         comb_phrase_pairs = pickle.load(handle)
 
     print 'Measuring sparsity...'
