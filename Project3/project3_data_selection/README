@@ -1,0 +1,32 @@
+****
+DATA
+****
+
+out.en			450K out-of-domain data
+out.es
+
+software.es		software in-domain: 100K
+software.en
+software.dev.es		SMT tuning set for software in-domain
+software.dev.en
+software.test.es	SMT test set for software in-domain
+software.test.en
+
+legal.es		legal in-domain: 100K
+legal.en
+legal.dev.es		SMT tuning set for legal in-domain
+legal.dev.en
+legal.test.es		SMT tuning set for legal in-domain
+legal.test.en
+
+
+****
+TODO
+****
+
+You are given a 450K out-of-domain data set (out) and two 100K in-domain data sets (software + legal). For each in-domain data set, construct a 500K mixed-domain corpus by adding the first 50K in-domain sentences to out and consider the remaining 50K as your in-domain corpus. Then:
+
+1. Use a data selection method to sort the mixed-domain sentences according to their relevance for the in-domain. You can find some initial useful references about LM, TM and IR-based selection methods here: [Zhao et al., 2004, Lu et al., 2007, Moore and Lewis, 2010, Axelrod et al., 2011]. You are encouraged to come up and experiment with your own selection method.
+2. Intrinsic evaluation: calculate pseudo-Precision/Recall figures for the selected sentences. Make a meaningful comparison between the different in-domains.
+3. Extrinsic evaluation: use the selected sentences to train, tune and evaluate several SMT models and compare. You can use the relevant in-domain tuning and test sets for this task. Make a meaningful comparison between the different in-domains.
+4. (optionally) Investigate optimal sentence selection cut-off rates.
