@@ -1,11 +1,12 @@
 from __future__ import division
 from collections import defaultdict
-import nltk
+import nltk, logging
 import numpy as np
 from sklearn import svm
 from gensim.models import Word2Vec
+from sklearn.metrics import precision_recall_fscore_support
 
-# logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 # we will take log(0) = -Inf so turn off this warning
@@ -89,7 +90,7 @@ def create_w2v_dataset(sentences, model):
         feat_vec = []
         for w in sent:
             feat_vec.append(model[w])
-        data.append(sum(feat_vec))
+        data.append(sum(feat_vec)/len(sent))
 
     return np.asarray(data)
 
@@ -122,7 +123,12 @@ def main2():
     domain = 'legal.half.en'
     with open('project3_data_selection/'+domain, 'rb') as doc:
         uni_sentences = [sentence.split() for sentence in doc.readlines()]
-    model = Word2Vec(uni_sentences, min_count=1, workers=4, size=10)
+
+    domain_out = 'out.mixed.legal.en'
+    with open('project3_data_selection/'+domain_out, 'rb') as doc:
+        uni_sentences_out = [sentence.split() for sentence in doc.readlines()]
+
+    model = Word2Vec(uni_sentences+uni_sentences_out, min_count=1, workers=4, size=500)
     model.save('w2vec_legal')
 
 
@@ -144,12 +150,20 @@ def main3():
     with open('project3_data_selection/'+domain_out, 'rb') as doc:
         uni_sentences_out = [sentence.split() for sentence in doc.readlines()]
 
+    labels = - np.ones(len(uni_sentences_out))
+    labels[-50000:] = 1
     test_data = create_w2v_dataset(uni_sentences_out, model)
 
     print 'Predicting for test data...'
     predictions = clf.predict(test_data)
-    print predictions
-    print np.unique(predictions)
+
+    p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
+    print 'Precision:', p
+    print 'Recall:', r
+    print 'F1:', f
+    print 'Support:', s
+
 
 if __name__ == '__main__':
+    # main2()
     main3()
