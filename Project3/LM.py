@@ -142,7 +142,7 @@ def main3():
     train_data = create_w2v_dataset(uni_sentences, model)
 
     print 'Fitting one class SVM'
-    clf = svm.OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
+    clf = svm.OneClassSVM(kernel='linear')
     clf.fit(train_data)
 
     print 'Getting testing data...'
@@ -157,6 +157,7 @@ def main3():
     print 'Predicting for test data...'
     predictions = clf.predict(test_data)
 
+    print np.where(predictions == 1)
     p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
     print 'Precision:', p
     print 'Recall:', r
@@ -165,5 +166,5 @@ def main3():
 
 
 if __name__ == '__main__':
-    # main2()
+    main2()
     main3()
