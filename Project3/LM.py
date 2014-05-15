@@ -188,7 +188,7 @@ def main4():
     kliep.fit_CV(train_data, test_data)
     predictions = - np.ones(len(uni_sentences_out))
     w = kliep.predict(test_data).ravel()
-    predictions[np.where(w < 1)[0]] = 1
+    predictions[np.where(w < 0.8)[0]] = 1
     print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
     # sorted_ind = np.argsort(w, axis=None)[::-1]
     # predictions[sorted_ind[0:50000]] = 1
