@@ -12,8 +12,8 @@ class KLIEP:
         self.max_iter = max_iter
         self.epsilons = epsilons
 
-    def KG(self, X_l, M_l):
-        basis_distances = cdist(X_l, M_l, 'euclidean')
+    def KG(self, X, M):
+        basis_distances = cdist(X, M, 'euclidean')
         K = np.exp(-basis_distances ** 2 / (2 * self.sigma**2))
         return K
 
