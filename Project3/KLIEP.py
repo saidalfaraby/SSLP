@@ -6,10 +6,12 @@ from scipy.spatial.distance import cdist
 
 class KLIEP:
 
-    def __init__(self, sigma=1, init_b=100, max_iter=100):
+    def __init__(self, sigma=1, init_b=100, max_iter=100, seed=None):
         self.sigma = sigma
         self.init_b = init_b   # initial number of kernels
         self.max_iter = max_iter
+        if seed is not None:
+            np.random.seed(seed=seed)
 
     def KG(self, X, M, sigma):
         basis_distances = cdist(X, M, 'euclidean')
@@ -112,8 +114,6 @@ class KLIEP:
 
 
 def main(case):
-    # set seed to get fixed results
-    np.random.seed(seed=0)
 
     if case == 1:
         mat = loadmat('kliep.mat')
@@ -121,7 +121,7 @@ def main(case):
         x_nu = mat['x_nu'].T
         rand_index = mat['rand_index'].T.ravel() - 1
 
-        kliep = KLIEP()
+        kliep = KLIEP(seed=0)
         kliep.fit_CV(x_de, x_nu, rand_index=rand_index)
 
         w = kliep.predict(x_de)
@@ -130,7 +130,7 @@ def main(case):
         x_de = np.random.multivariate_normal([0, 0], np.eye(2), 100)
         x_nu = np.random.multivariate_normal([0, 0], 0.5*np.eye(2), 100)
 
-        kliep = KLIEP()
+        kliep = KLIEP(seed=0)
         kliep.fit_CV(x_de, x_nu)
 
         w = kliep.predict(x_de)
