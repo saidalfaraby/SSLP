@@ -5,6 +5,7 @@ import numpy as np
 from sklearn import svm
 from gensim.models import Word2Vec
 from sklearn.metrics import precision_recall_fscore_support
+from KLIEP import KLIEP
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -119,7 +120,7 @@ def main():
     print 'KL(In||Out) =', kl_divergence(in_lm.bi_probs, out_lm.bi_probs)
 
 
-def main2():
+def main2(size):
     domain = 'legal.half.en'
     with open('project3_data_selection/'+domain, 'rb') as doc:
         uni_sentences = [sentence.split() for sentence in doc.readlines()]
@@ -128,7 +129,7 @@ def main2():
     with open('project3_data_selection/'+domain_out, 'rb') as doc:
         uni_sentences_out = [sentence.split() for sentence in doc.readlines()]
 
-    model = Word2Vec(uni_sentences+uni_sentences_out, min_count=1, workers=4, size=500)
+    model = Word2Vec(uni_sentences+uni_sentences_out, min_count=1, workers=4, size=size)
     model.save('w2vec_legal')
 
 
@@ -165,6 +166,40 @@ def main3():
     print 'Support:', s
 
 
+def main4():
+    domain = 'legal.half.en'
+    with open('project3_data_selection/'+domain, 'rb') as doc:
+        uni_sentences = [sentence.split() for sentence in doc.readlines()]
+    model = Word2Vec.load('w2vec_legal')
+
+    print 'Getting training data...'
+    train_data = create_w2v_dataset(uni_sentences, model)
+
+    print 'Getting testing data...'
+    domain_out = 'out.mixed.legal.en'
+    with open('project3_data_selection/'+domain_out, 'rb') as doc:
+        uni_sentences_out = [sentence.split() for sentence in doc.readlines()]
+
+    labels = - np.ones(len(uni_sentences_out))
+    labels[-50000:] = 1
+    test_data = create_w2v_dataset(uni_sentences_out, model)
+
+    kliep = KLIEP(seed=0)
+    kliep.fit_CV(train_data, test_data)
+    predictions = - np.ones(len(uni_sentences_out))
+    w = kliep.predict(test_data).ravel()
+    predictions[np.where(w < 1)[0]] = 1
+    print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
+    # sorted_ind = np.argsort(w, axis=None)[::-1]
+    # predictions[sorted_ind[0:50000]] = 1
+
+    p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
+    print 'Precision:', p
+    print 'Recall:', r
+    print 'F1:', f
+    print 'Support:', s
+
+
 if __name__ == '__main__':
-    main2()
-    main3()
+    main2(50)
+    main4()

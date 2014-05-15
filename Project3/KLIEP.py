@@ -126,6 +126,7 @@ def main(case):
 
         w = kliep.predict(x_de)
         print w.sum()  # needs to be 100
+        print w.shape
     elif case == 2:
         x_de = np.random.multivariate_normal([0, 0], np.eye(2), 100)
         x_nu = np.random.multivariate_normal([0, 0], 0.5*np.eye(2), 100)
@@ -135,6 +136,7 @@ def main(case):
 
         w = kliep.predict(x_de)
         print w.sum()  # needs to be 100
+        print w.shape
 
 
 if __name__ == '__main__':
