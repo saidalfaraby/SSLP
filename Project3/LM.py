@@ -174,6 +174,7 @@ def main4():
 
     print 'Getting training data...'
     train_data = create_w2v_dataset(uni_sentences, model)
+    print 'parsed size:', train_data.shape
 
     print 'Getting testing data...'
     domain_out = 'out.mixed.legal.en'
@@ -183,15 +184,16 @@ def main4():
     labels = - np.ones(len(uni_sentences_out))
     labels[-50000:] = 1
     test_data = create_w2v_dataset(uni_sentences_out, model)
+    print 'parsed size:', test_data.shape
 
-    kliep = KLIEP(seed=0)
-    kliep.fit_CV(train_data, test_data)
+    kliep = KLIEP(init_b=200, seed=0)
+    kliep.fit_CV(test_data, train_data)
     predictions = - np.ones(len(uni_sentences_out))
     w = kliep.predict(test_data).ravel()
-    predictions[np.where(w < 0.8)[0]] = 1
-    print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
-    # sorted_ind = np.argsort(w, axis=None)[::-1]
-    # predictions[sorted_ind[0:50000]] = 1
+    # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
+    # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
+    sorted_ind = np.argsort(w, axis=None)[::-1]
+    predictions[sorted_ind[0:50000]] = 1
 
     p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
     print 'Precision:', p
@@ -201,5 +203,5 @@ def main4():
 
 
 if __name__ == '__main__':
-    main2(50)
+    # main2(20)
     main4()
