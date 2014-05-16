@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 from scipy.io import loadmat
 from scipy.spatial.distance import cdist
+from sklearn.cross_validation import KFold
 
 
 class KLIEP:
@@ -24,9 +25,11 @@ class KLIEP:
         alpha = np.ones((self.b, 1))
         score_old = -np.inf
 
+        final_alpha = np.empty_like(alpha)
+        tmp_alpha = np.empty_like(alpha)
         for epsilon in 10**np.asarray(range(3, -4, -1), dtype=float):
             for i in xrange(self.max_iter):
-                tmp_alpha = alpha.copy()
+                np.copyto(tmp_alpha, alpha)
                 alpha = alpha + epsilon*np.dot(A_jl.T, np.dot(A_jl, alpha) ** -1)
                 # we use pinv since we cannot always compute the inverse
                 alpha = alpha + b_l * (1 - np.dot(b_l.T, alpha))*np.linalg.pinv(c)
@@ -35,7 +38,7 @@ class KLIEP:
                 score = np.mean(np.log(np.dot(A_jl, alpha)))
 
                 if score - score_old <= 0:
-                    final_alpha = tmp_alpha
+                    np.copyto(final_alpha, tmp_alpha)
                     break
 
                 # print 'Score at iter', i+1, ':', score
@@ -61,8 +64,7 @@ class KLIEP:
 
         # try also different kernels?
         A_jl = self.KG(x_te, k_cent, self.sigma)
-        tmp_X = self.KG(x_tr, k_cent, self.sigma)
-        b_l = np.mean(tmp_X, axis=0).reshape((self.b, 1))
+        b_l = np.mean(self.KG(x_tr, k_cent, self.sigma), axis=0).reshape((self.b, 1))
 
         self.alpha = self.learning(b_l, A_jl)
 
@@ -82,16 +84,14 @@ class KLIEP:
             for i in xrange(9):
                 sigma_new = sigma - 10 ** e
                 score_new = 0
-                #np.random.shuffle(x_te)
-                x_te = x_te[np.random.permutation(x_te.shape[0]), :]
-                tmp_X = self.KG(x_tr, k_cent, sigma_new)
-                b_l = np.mean(tmp_X, axis=0).reshape((self.b, 1))
-                splits = np.array_split(x_te, n_folds)
-                for fold in xrange(len(splits)):
-                    used = np.vstack([splits[k] for k in xrange(len(splits)) if k != fold])
-                    A_jl = self.KG(used, k_cent, sigma_new)
+
+                b_l = np.mean(self.KG(x_tr, k_cent, sigma_new), axis=0).reshape((self.b, 1))
+
+                kf = KFold(x_te.shape[0], n_folds=n_folds, shuffle=True, indices=False)
+                for train, test in kf:
+                    A_jl = self.KG(x_te[train], k_cent, sigma_new)
                     alpha_cv = self.learning(b_l, A_jl)
-                    wh_cv = np.dot(self.KG(splits[fold], k_cent, sigma_new), alpha_cv)
+                    wh_cv = np.dot(self.KG(x_te[test], k_cent, sigma_new), alpha_cv)
                     score_new = score_new + np.mean(np.log(wh_cv))/(n_folds)
 
                 if score_new - score <= 0:
@@ -102,8 +102,7 @@ class KLIEP:
 
         print 'Best sigma:', sigma
         self.sigma = sigma
-        tmp_X = self.KG(x_tr, k_cent, sigma)
-        b_l = np.mean(tmp_X, axis=0).reshape((self.b, 1))
+        b_l = np.mean(self.KG(x_tr, k_cent, sigma), axis=0).reshape((self.b, 1))
         A_jl = self.KG(x_te, k_cent, sigma)
         self.alpha = self.learning(b_l, A_jl)
 
@@ -132,7 +131,7 @@ def main(case):
         x_nu = np.random.multivariate_normal([0, 0], 0.5*np.eye(2), 100)
 
         kliep = KLIEP(seed=0)
-        kliep.fit_CV(x_de, x_nu)
+        kliep.fit_CV(x_de, x_nu, n_folds=5)
 
         w = kliep.predict(x_de)
         print w.sum()  # needs to be 100
