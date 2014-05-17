@@ -3,6 +3,7 @@ import numpy as np
 from scipy.io import loadmat
 from scipy.spatial.distance import cdist
 from sklearn.cross_validation import KFold
+from sklearn.neighbors import BallTree
 
 
 class KLIEP:
@@ -19,7 +20,10 @@ class KLIEP:
         K = np.exp(-basis_distances ** 2 / (2 * sigma**2))
         return K
 
-    def learning(self, b_l, A_jl):
+    def KC(self, X, M):
+        return cdist(X, M, 'cosine')
+
+    def learning(self, b_l, A_jl, verbose=False):
         c = np.dot(b_l.T, b_l)
         # initial alphas
         alpha = np.ones((self.b, 1))
@@ -30,8 +34,10 @@ class KLIEP:
         for epsilon in 10**np.asarray(range(3, -4, -1), dtype=float):
             for i in xrange(self.max_iter):
                 np.copyto(tmp_alpha, alpha)
+                # gradient ascent
                 alpha = alpha + epsilon*np.dot(A_jl.T, np.dot(A_jl, alpha) ** -1)
                 # we use pinv since we cannot always compute the inverse
+                # enfore constraints
                 alpha = alpha + b_l * (1 - np.dot(b_l.T, alpha))*np.linalg.pinv(c)
                 alpha = np.maximum(np.zeros(alpha.shape), alpha)
                 alpha = np.dot(alpha, np.linalg.pinv(np.dot(b_l.T, alpha)))
@@ -41,10 +47,12 @@ class KLIEP:
                     np.copyto(final_alpha, tmp_alpha)
                     break
 
-                # print 'Score at iter', i+1, ':', score
+                if verbose:
+                    print 'Score at iter', i+1, ':', score
                 score_old = score
 
-        # print 'Final score:', score_old
+        if verbose:
+            print 'Final score:', score_old
         return final_alpha
 
     # simple fit without optimizing for sigma
@@ -66,7 +74,30 @@ class KLIEP:
         A_jl = self.KG(x_te, k_cent, self.sigma)
         b_l = np.mean(self.KG(x_tr, k_cent, self.sigma), axis=0).reshape((self.b, 1))
 
-        self.alpha = self.learning(b_l, A_jl)
+        self.alpha = self.learning(b_l, A_jl, verbose=True)
+
+    # use cosine kernel
+    def fit_cosine(self, x_tr, x_te, rand_index=None):
+        if rand_index is None:
+            rand_index = np.random.permutation(x_te.shape[0])
+        # get the minimum b
+        self.b = min(self.init_b, x_te.shape[0])
+        # parse the centers (for the basis functions kernels)
+        k_cent = x_te[rand_index[0:self.b], :]
+        # for predicting later
+        self.centers = k_cent.copy()
+
+        # try also different kernels?
+        A_jl = self.KC(x_te, k_cent)
+        b_l = np.mean(self.KC(x_tr, k_cent), axis=0).reshape((self.b, 1))
+        self.alpha = self.learning(b_l, A_jl, verbose=True)
+
+    # unfinished
+    def find_NN_basis(x_tr, x_te, leaf_size):
+        bt = BallTree(x_tr, leaf_size=30, metric='euclidean')
+        indices = bt.query(x_te, k=1, return_distance=False)
+        uniq_val = np.unique(indices)
+        return x_te[uniq_val, :]
 
     # cross-validation to optimize sigma
     def fit_CV(self, x_tr, x_te, rand_index=None, n_folds=5):
