@@ -48,16 +48,22 @@ class Features(object):
   def construct_features(self, sentences):
     print 'creating features...'
     data = []
+    regex = re.compile('[%s]' % re.escape(string.punctuation))
     for i, sent in enumerate(sentences):
-        print i
-        term, pos = (0, 0)
-        for w, p in zip(sent, nltk.pos_tag(sent)):
-          term += self.Term_Freq[w]/self.N_Term
-          # I think we need a different normalizer here
-          pos += self.POS_Freq[(w, p)]/self.N_Term
-        term /= len(sent)
-        pos /= len(sent)
-        data.append([term, pos])
+      print i
+      term, pos = (0, 0)
+      for token, p in nltk.pos_tag(nltk.word_tokenize(sent)):
+        try:
+          new_token = regex.sub(u'', token).decode('utf-8')
+          if not new_token == u'' and not new_token in stopwords.words('english'):
+            term += self.Term_Freq[new_token]/self.N_Term
+            # I think we need a different normalizer here
+            pos += self.POS_Freq[(new_token, p)]/self.N_Term
+        except:
+          pass
+      term /= len(sent)
+      pos /= len(sent)
+      data.append([term, pos])
 
     return np.asarray(data)
 
