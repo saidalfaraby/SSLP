@@ -46,7 +46,7 @@ class IntelligentSelection(object):
     self.log('selecting ...')
     for mix in self.Mix_Docs:
       mix['score'] = self.entropy_score(mix['termpos'])
-      if mix['score']<99999:
+      if mix['docID']<450000 and mix['score']<99999 and mix['score']>-99999:
         self.scores.append(mix['score'])
       if mix['score'] > threshold:
         self.Selected_Docs.append(mix['docID'])
