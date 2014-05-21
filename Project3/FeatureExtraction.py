@@ -1,7 +1,6 @@
 from __future__ import division
 from collections import defaultdict
 import nltk
-import numpy as np
 import re
 import string
 from nltk.corpus import stopwords
@@ -15,7 +14,11 @@ class Features(object):
     self.TPOS_Freq = defaultdict(int)  # term, postag frequency. Key = (term,POSTag), Val = Frequency
     self.Trans_Freq = defaultdict(int)  # translation frequency. Key = (E,F), Val = frequency
     self.N_Term = 0
+    self.BN_Term = 0
     self.POS_Freq = defaultdict(int)  # postag frequency. Key = POSTag, Val = Frequency
+    self.BTerm_Freq = defaultdict(int)  # bigram frequency. Key = (term, term), Val = Frequency
+    self.BPOS_Freq = defaultdict(int)  # bigram POS-tags. key = (POSTag, POSTag), Val = Frequency
+    self.BTPOS_Freq = defaultdict(int)
 
   def parse_doc(self, path):
     regex = re.compile('[%s]' % re.escape(string.punctuation))
@@ -33,39 +36,77 @@ class Features(object):
             self.update_count(new_token, pos)
         except:
           pass
+
+      # estimate statistics for bigrams
+      words = [elem[0] for elem in sentence]
+      pos_tags = [elem[1] for elem in sentence]
+
+      b_words = nltk.bigrams(words)
+      b_pos = nltk.bigrams(pos_tags)
+
+      for b_w, b_p in zip(b_words, b_pos):
+        self.update_count(b_w, b_p, bigrams=1)
+
     self.set_lambda(1)
 
   def set_lambda(self, v):
+    # unigram
     self.Term_Freq.default_factory = lambda: v
     self.TPOS_Freq.default_factory = lambda: v
     self.Trans_Freq.default_factory = lambda: v
     self.POS_Freq.default_factory = lambda: v
+    # bigram
+    self.BTerm_Freq.default_factory = lambda: v
+    self.BPOS_Freq.default_factory = lambda: v
+    self.BTPOS_Freq.default_factory = lambda: v
 
-  def prune_dict(self, dictionary):
+  def prune_dict(self, dictionary, bigram=0):
     for k, v in dictionary.iteritems():
       if v <= 1:
         del dictionary[k]
-        self.N_Term -= 1
+        if bigram == 0:
+          self.N_Term -= 1
+        elif bigram == 1:
+          self.BN_Term -= 1
 
   def prune(self):
+    # unigram
     self.prune_dict(self.Term_Freq)
     self.prune_dict(self.POS_Freq)
     self.prune_dict(self.TPOS_Freq)
+    # bigram
+    self.prune_dict(self.BTerm_Freq, bigram=1)
+    self.prune_dict(self.BPOS_Freq, bigram=1)
+    self.prune_dict(self.BTPOS_Freq, bigram=1)
 
-  def update_count(self, t, p):
-    self.Term_Freq[t] += 1
-    self.TPOS_Freq[(t, p)] += 1
-    self.N_Term += 1
-    self.POS_Freq[p] += 1
+  def update_count(self, t, p, bigrams=0):
+    if bigrams == 0:
+      self.Term_Freq[t] += 1
+      self.TPOS_Freq[(t, p)] += 1
+      self.N_Term += 1
+      self.POS_Freq[p] += 1
+    elif bigrams == 1:
+      self.BN_Term += 1
+      self.BTerm_Freq[t] += 1
+      self.BPOS_Freq[p] += 1
+      self.BTPOS_Freq[(t, p)] += 1
 
   def save(self, path='features_data.pickle'):
     self.log('save data to '+path)
     storage = {}
+
+    # unigram
     storage['Term_Freq'] = self.Term_Freq
     storage['POS_Freq'] = self.POS_Freq
     storage['TPOS_Freq'] = self.TPOS_Freq
     storage['Trans_Freq'] = self.Trans_Freq
     storage['N_Term'] = self.N_Term
+    # bigram
+    storage['BPOS_Freq'] = self.BPOS_Freq
+    storage['BTPOS_Freq'] = self.BTPOS_Freq
+    storage['BTerm_Freq'] = self.BTerm_Freq
+    storage['BN_Term'] = self.BN_Term
+
     with open(path, 'wb') as handle:
       pickle.dump(storage, handle)
     self.log('saved..')
@@ -74,11 +115,20 @@ class Features(object):
     self.log('loading data '+path)
     with open(path, 'rb') as handle:
       storage = pickle.load(handle)
+
+    # unigram
     self.Term_Freq = storage['Term_Freq']
     self.POS_Freq = storage['POS_Freq']
     self.TPOS_Freq = storage['TPOS_Freq']
     self.Trans_Freq = storage['Trans_Freq']
     self.N_Term = storage['N_Term']
+
+    # bigram
+    self.BPOS_Freq = storage['BPOS_Freq']
+    self.BTPOS_Freq = storage['BTPOS_Freq']
+    self.BTerm_Freq = storage['BTerm_Freq']
+    self.BN_Term = storage['BN_Term']
+
     self.set_lambda(1)
     self.log('loaded..')
 
