@@ -49,7 +49,7 @@ class Features(object):
         self.update_count(b_w, b_p, bigrams=1)
 
     self.set_lambda(1)
-    self.prune_dict()
+    self.prune()
 
   def set_lambda(self, v):
     # unigram
