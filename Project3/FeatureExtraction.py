@@ -5,6 +5,7 @@ import re
 import string
 from nltk.corpus import stopwords
 import dill as pickle
+import numpy as np
 
 
 class Features(object):
@@ -91,6 +92,56 @@ class Features(object):
       self.BTerm_Freq[t] += 1
       self.BPOS_Freq[p] += 1
       self.BTPOS_Freq[(t, p)] += 1
+
+  def construct_features(self, sentences, use_smoothing=True):
+    print 'creating features...'
+
+    if not use_smoothing:
+      self.set_lambda(0)
+
+    data = []
+    regex = re.compile('[%s]' % re.escape(string.punctuation))
+    for i, sent in enumerate(sentences):
+      print i
+      term, tpos, posf, bterm, btpos, bposf = (0, 0, 0, 0, 0, 0)
+      tokenized_tagged = nltk.pos_tag(nltk.word_tokenize(sent))
+      for token, p in tokenized_tagged:
+        # unigrams
+        try:
+          new_token = regex.sub(u'', token).decode('utf-8')
+          if not new_token == u'' and not new_token in stopwords.words('english'):
+            term += self.Term_Freq[new_token]/self.N_Term
+            # I think we need a different normalizer here
+            posf += self.POS_Freq[p]/self.N_Term
+            tpos += self.Term_Freq[(new_token, p)]/self.N_Term
+        except:
+          pass
+
+      # normalize with respect to sentence length
+      term /= len(sent)
+      posf /= len(sent)
+      tpos /= len(sent)
+
+      # bigrams
+      words = [elem[0] for elem in tokenized_tagged]
+      pos_tags = [elem[1] for elem in tokenized_tagged]
+
+      b_words = nltk.bigrams(words)
+      b_pos = nltk.bigrams(pos_tags)
+
+      for b_w, b_p in zip(b_words, b_pos):
+        bterm += self.BTerm_Freq[b_w]/self.BN_Term
+        bposf += self.BPOS_Freq[b_p]/self.BN_Term
+        btpos += self.BTPOS_Freq[(b_w, b_p)]/self.BN_Term
+
+      # normalize
+      bterm /= len(b_words)
+      bposf /= len(b_pos)
+      btpos /= len(b_words)
+
+      data.append([term, posf, tpos, bterm, bposf, btpos])
+
+    return np.asarray(data)
 
   def save(self, path='features_data.pickle'):
     self.log('save data to '+path)
