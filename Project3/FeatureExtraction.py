@@ -63,8 +63,9 @@ class Features(object):
     self.BTPOS_Freq.default_factory = lambda: v
 
   def prune_dict(self, dictionary, bigram=0):
-    for k, v in dictionary.iteritems():
-      if v <= 1:
+    keys = dictionary.keys()
+    for k in keys:
+      if dictionary[k] <= 1:
         del dictionary[k]
         if bigram == 0:
           self.N_Term -= 1
