@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
 from FeatureExtraction import Features
+import dill as pickle
 
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -158,35 +159,39 @@ def main5():
 
 
 def main6():
-    # F = Features()
-    # F.parse_doc('project3_data_selection/legal.half.en')
-    # F.save('lms_in_domain.pickle')
+    F = Features()
+    F.parse_doc('project3_data_selection/legal.half.en')
+    F.save('lms_in_domain.pickle')
 
-    # F2 = Features()
-    # F2.parse_doc('project3_data_selection/out.mixed.legal.en')
-    # F2.save('lms_out_domain.pickle')
+    F2 = Features()
+    F2.parse_doc('project3_data_selection/out.mixed.legal.en')
+    F2.save('lms_out_domain.pickle')
 
-    In = Features()
-    In.load('lms_in_domain.pickle')
+    # In = Features()
+    # In.load('lms_in_domain.pickle')
 
-    Out = Features()
-    Out.load('lms_out_domain.pickle')
+    # Out = Features()
+    # Out.load('lms_out_domain.pickle')
 
-    print 'Getting training data...'
-    domain = 'legal.half.en'
-    with open('project3_data_selection/'+domain, 'rb') as doc:
-        uni_sentences = [sentence for sentence in doc.readlines()]
+    # print 'Getting training data...'
+    # domain = 'legal.half.en'
+    # with open('project3_data_selection/'+domain, 'rb') as doc:
+    #     uni_sentences = [sentence for sentence in doc.readlines()]
 
-    print 'Getting testing data...'
-    domain_out = 'out.mixed.legal.en'
-    with open('project3_data_selection/'+domain_out, 'rb') as doc:
-        uni_sentences_out = [sentence for sentence in doc.readlines()]
+    # print 'Getting testing data...'
+    # domain_out = 'out.mixed.legal.en'
+    # with open('project3_data_selection/'+domain_out, 'rb') as doc:
+    #     uni_sentences_out = [sentence for sentence in doc.readlines()]
 
-    in_d = In.construct_features(uni_sentences)
-    out_d = Out.construct_features(uni_sentences_out)
+    # in_d = In.construct_features(uni_sentences)
+    # with open('feat_vec_in.legal.en.pickle', 'rb') as handle:
+    #     pickle.dump(in_d, handle)
 
-    print in_d.shape, out_d.shape
+    # out_d = Out.construct_features(uni_sentences_out)
+    # with open('feat_vec_out.legal.en.pickle', 'rb') as handle:
+    #     pickle.dump(out_d, handle)
 
+    # print in_d.shape, out_d.shape
 
 if __name__ == '__main__':
     # main2(20)
