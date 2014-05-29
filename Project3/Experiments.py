@@ -189,12 +189,12 @@ def main6(which_d):
         save_in = 'feat_vec_in.legal.en.pickle'
 
         in_d = In.construct_features(uni_sentences, use_smoothing=False)
-        with open(save_in, 'rb') as handle:
+        with open(save_in, 'wb') as handle:
             pickle.dump(in_d, handle)
 
         save_out = 'feat_vec_out.legal.en.pickle'
         out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
-        with open(save_out, 'rb') as handle:
+        with open(save_out, 'wb') as handle:
             pickle.dump(out_d, handle)
 
     elif which_d is 'software':
@@ -227,12 +227,12 @@ def main6(which_d):
         save_in = 'feat_vec_in.software.en.pickle'
 
         in_d = In.construct_features(uni_sentences, use_smoothing=False)
-        with open(save_in, 'rb') as handle:
+        with open(save_in, 'wb') as handle:
             pickle.dump(in_d, handle)
 
         save_out = 'feat_vec_out.software.en.pickle'
         out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
-        with open(save_out, 'rb') as handle:
+        with open(save_out, 'wb') as handle:
             pickle.dump(out_d, handle)
 
     print in_d.shape, out_d.shape
