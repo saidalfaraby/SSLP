@@ -158,41 +158,85 @@ def main5():
     print 'Support:', s
 
 
-def main6():
-    # F = Features()
-    # F.parse_doc('project3_data_selection/legal.half.en')
-    # F.save('lms_in_domain.pickle')
+def main6(which_d):
+    if which_d is 'legal':
+        F = Features()
+        F.parse_doc('project3_data_selection/legal.half.en')
+        F.save('lms_in_domain.pickle')
 
-    # F2 = Features()
-    # F2.parse_doc('project3_data_selection/out.mixed.legal.en')
-    # F2.save('lms_out_domain.pickle')
+        F2 = Features()
+        F2.parse_doc('project3_data_selection/out.mixed.legal.en')
+        F2.save('lms_out_domain.pickle')
 
-    In = Features()
-    In.load('lms_in_domain.pickle')
+        In = Features()
+        In.load('lms_in_domain.pickle')
 
-    Out = Features()
-    Out.load('lms_out_domain.pickle')
+        Out = Features()
+        Out.load('lms_out_domain.pickle')
 
-    print 'Getting training data...'
-    domain = 'legal.half.en'
-    with open('project3_data_selection/'+domain, 'rb') as doc:
-        uni_sentences = [sentence for sentence in doc.readlines()]
+        print 'Getting training data...'
+        domain = 'legal.half.en'
 
-    print 'Getting testing data...'
-    domain_out = 'out.mixed.legal.en'
-    with open('project3_data_selection/'+domain_out, 'rb') as doc:
-        uni_sentences_out = [sentence for sentence in doc.readlines()]
+        with open('project3_data_selection/'+domain, 'rb') as doc:
+            uni_sentences = [sentence for sentence in doc.readlines()]
 
-    in_d = In.construct_features(uni_sentences, use_smoothing=False)
-    with open('feat_vec_in.legal.en.pickle', 'rb') as handle:
-        pickle.dump(in_d, handle)
+        print 'Getting testing data...'
+        domain_out = 'out.mixed.legal.en'
 
-    out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
-    with open('feat_vec_out.legal.en.pickle', 'rb') as handle:
-        pickle.dump(out_d, handle)
+        with open('project3_data_selection/'+domain_out, 'rb') as doc:
+            uni_sentences_out = [sentence for sentence in doc.readlines()]
+
+        save_in = 'feat_vec_in.legal.en.pickle'
+
+        in_d = In.construct_features(uni_sentences, use_smoothing=False)
+        with open(save_in, 'rb') as handle:
+            pickle.dump(in_d, handle)
+
+        save_out = 'feat_vec_out.legal.en.pickle'
+        out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
+        with open(save_out, 'rb') as handle:
+            pickle.dump(out_d, handle)
+
+    elif which_d is 'software':
+        F = Features()
+        F.parse_doc('project3_data_selection/software.half.en')
+        F.save('lms_in_domain_soft.pickle')
+
+        F2 = Features()
+        F2.parse_doc('project3_data_selection/out.mixed.software.en')
+        F2.save('lms_out_domain_soft.pickle')
+
+        In = Features()
+        In.load('lms_in_domain_soft.pickle')
+
+        Out = Features()
+        Out.load('lms_out_domain_soft.pickle')
+
+        print 'Getting training data...'
+        domain = 'software.half.en'
+
+        with open('project3_data_selection/'+domain, 'rb') as doc:
+            uni_sentences = [sentence for sentence in doc.readlines()]
+
+        print 'Getting testing data...'
+        domain_out = 'out.mixed.software.en'
+
+        with open('project3_data_selection/'+domain_out, 'rb') as doc:
+            uni_sentences_out = [sentence for sentence in doc.readlines()]
+
+        save_in = 'feat_vec_in.software.en.pickle'
+
+        in_d = In.construct_features(uni_sentences, use_smoothing=False)
+        with open(save_in, 'rb') as handle:
+            pickle.dump(in_d, handle)
+
+        save_out = 'feat_vec_out.software.en.pickle'
+        out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
+        with open(save_out, 'rb') as handle:
+            pickle.dump(out_d, handle)
 
     print in_d.shape, out_d.shape
 
 if __name__ == '__main__':
     # main2(20)
-    main6()
+    main6('software')
