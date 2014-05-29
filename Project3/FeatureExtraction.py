@@ -130,15 +130,16 @@ class Features(object):
       b_words = nltk.bigrams(words)
       b_pos = nltk.bigrams(pos_tags)
 
-      for b_w, b_p in zip(b_words, b_pos):
-        bterm += self.BTerm_Freq[b_w]/self.BN_Term
-        bposf += self.BPOS_Freq[b_p]/self.BN_Term
-        btpos += self.BTPOS_Freq[(b_w, b_p)]/self.BN_Term
+      if len(b_words) > 0:
+        for b_w, b_p in zip(b_words, b_pos):
+          bterm += self.BTerm_Freq[b_w]/self.BN_Term
+          bposf += self.BPOS_Freq[b_p]/self.BN_Term
+          btpos += self.BTPOS_Freq[(b_w, b_p)]/self.BN_Term
 
       # normalize
-      bterm /= len(b_words)
-      bposf /= len(b_pos)
-      btpos /= len(b_words)
+        bterm /= len(b_words)
+        bposf /= len(b_pos)
+        btpos /= len(b_words)
 
       data.append([term, posf, tpos, bterm, bposf, btpos])
 
