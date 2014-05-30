@@ -39,16 +39,22 @@ class IntelligentSelection(object):
     if MIX!=None and self.dual_score:
       sc_term_mix += -np.log(MIX.Term_Freq[t]/MIX.N_Term) 
       sc_pos_mix+= -np.log(MIX.POS_Freq[t,p]/MIX.N_Term)
+      if IN.N_Term==0 or MIX.N_Term ==0 or MIX.Term_Freq[t]==0 or MIX.POS_Freq[t,p]==0:
+        print 'something is zero'
+        print 'TERM ',MIX.Term_Freq[t]
+        print 'POS', MIX.POS_Freq[t,p]
     if self.include_pos :
-      return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
-    return (sc_term_in-sc_term_mix)/len(termpos)
+      # return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
+      return (sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix)
+    # return (sc_term_in-sc_term_mix)/len(termpos)
+    return sc_term_in-sc_term_mix
   def select(self, threshold, is_update=False):
     self.log('selecting ...')
     for mix in self.Mix_Docs:
       mix['score'] = self.entropy_score(mix['termpos'])
-      if mix['docID']<450000 and mix['score']<99999 and mix['score']>-99999:
+      if mix['docID']>=450000 and mix['score']<99999 and mix['score']>-99999:
         self.scores.append(mix['score'])
-      if mix['score'] > threshold:
+      if mix['score'] < threshold:
         self.Selected_Docs.append(mix['docID'])
         
     self.log('finish selecting')
@@ -105,6 +111,7 @@ class IntelligentSelection(object):
     self.log('min '+str(np.min(n)))
     self.log('max '+str(np.max(n)))
     self.log('mean '+str(np.mean(n)))
+    self.log('median '+str(np.median(n)))
     self.log('std '+str(np.std(n)))
 
   def save(self, path='mix_doc.pickle'):
@@ -127,7 +134,7 @@ class IntelligentSelection(object):
     f.close()
 
 if __name__ == '__main__':
-  th = 10
+  th = 8
 
   In_Model = Features()
   Mix_Model = Features()
@@ -148,7 +155,9 @@ if __name__ == '__main__':
       Mix_Model.update_count(t,p)
   print Mix_Model.N_Term
   print len(Mix_Model.Term_Freq)
-  IS.Mix_Model = Mix_Model
+  Mix_Model.set_lambda(1)
+  # IS.Mix_Model = Mix_Model
+
   # Mix_Model.save('mix_model.pickle')
   # Mix_Model.load('mix_model.pickle')
   
