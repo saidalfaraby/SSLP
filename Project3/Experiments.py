@@ -11,23 +11,6 @@ from FeatureExtraction import Features
 import dill as pickle
 
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-
-
-def create_w2v_model(size):
-    from gensim.models import Word2Vec
-    domain = 'legal.half.en'
-    with open('project3_data_selection/'+domain, 'rb') as doc:
-        uni_sentences = [sentence.split() for sentence in doc.readlines()]
-
-    domain_out = 'out.mixed.legal.en'
-    with open('project3_data_selection/'+domain_out, 'rb') as doc:
-        uni_sentences_out = [sentence.split() for sentence in doc.readlines()]
-
-    model = Word2Vec(uni_sentences+uni_sentences_out, min_count=1, workers=4, size=size)
-    model.save('w2vec_legal')
-
-
 def main3():
     from gensim.models import Word2Vec
     from utils import create_w2v_dataset
@@ -251,12 +234,12 @@ def test(which_d):
         labels[-50000:] = 1
 
         kliep = KLIEP(init_b=100, seed=0)
-        kliep.fit_CV(in_d, out_d)
+        kliep.fit_CV(out_d, in_d)
 
         w = kliep.predict(out_d).ravel()
         # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
         # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
-        sorted_ind = np.argsort(w, axis=None)[::-1]
+        sorted_ind = np.argsort(w, axis=None)  # [::-1]
         predictions[sorted_ind[0:50000]] = 1
 
         p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
