@@ -12,14 +12,15 @@ class Features(object):
   """docstring for Features"""
   def __init__(self):
     self.Term_Freq = defaultdict(int)  # term frequency. Key = term, Val = frequency
+    self.POS_Freq = defaultdict(int)  # postag frequency. Key = POSTag, Val = Frequency
     self.TPOS_Freq = defaultdict(int)  # term, postag frequency. Key = (term,POSTag), Val = Frequency
     self.Trans_Freq = defaultdict(int)  # translation frequency. Key = (E,F), Val = frequency
     self.N_Term = 0
-    self.BN_Term = 0
-    self.POS_Freq = defaultdict(int)  # postag frequency. Key = POSTag, Val = Frequency
+    
     self.BTerm_Freq = defaultdict(int)  # bigram frequency. Key = (term, term), Val = Frequency
     self.BPOS_Freq = defaultdict(int)  # bigram POS-tags. key = (POSTag, POSTag), Val = Frequency
     self.BTPOS_Freq = defaultdict(int)
+    self.BN_Term = 0
 
   def parse_doc(self, path):
     regex = re.compile('[%s]' % re.escape(string.punctuation))
@@ -194,11 +195,18 @@ class Features(object):
 
 if __name__ == '__main__':
     F = Features()
-    F.parse_doc('project3_data_selection/legal.half.en')
-    F.save('features_data_01_.pickle')
-    # F.load()
+    # F.parse_doc('project3_data_selection/legal.half.en')
+    # F.parse_doc('project3_data_selection/out.mixed.legal.en')
+    # F.save('in_model.pickle')
+    # F.save('full_mix_model.pickle')
+    F.load('in_model.pickle')
     print len(F.Term_Freq)
     print len(F.POS_Freq)
+    print len(F.TPOS_Freq)
     print F.N_Term
+    print len(F.BTerm_Freq)
+    print len(F.BPOS_Freq)
+    print len(F.BTPOS_Freq)
+    print F.BN_Term
     # print F.Term_Freq.keys()[0]#, F.Term_Freq(F.Term_Freq.keys()[0])
     # print F.POS_Freq[('even','RB')]#, F.POS_Freq(F.POS_Freq.keys()[0])
