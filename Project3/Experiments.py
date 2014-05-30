@@ -237,6 +237,62 @@ def main6(which_d):
 
     print in_d.shape, out_d.shape
 
+
+def test(which_d):
+    if which_d is 'legal':
+        with open('feat_vec_out.legal.en.pickle', 'rb') as handle:
+            out_d = pickle.load(handle)
+
+        with open('feat_vec_in.legal.en.pickle', 'rb') as handle:
+            in_d = pickle.load(handle)
+
+        labels = - np.ones(out_d.shape[0])
+        predictions = - np.ones(out_d.shape[0])
+        labels[-50000:] = 1
+
+        kliep = KLIEP(init_b=100, seed=0)
+        kliep.fit_CV(in_d, out_d)
+
+        w = kliep.predict(out_d).ravel()
+        # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
+        # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
+        sorted_ind = np.argsort(w, axis=None)[::-1]
+        predictions[sorted_ind[0:50000]] = 1
+
+        p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
+        print 'Precision:', p,
+        print 'Recall:', r,
+        print 'F1:', f,
+        print 'Support:', s,
+
+    elif which_d is 'software':
+        with open('feat_vec_out.software.en.pickle', 'rb') as handle:
+            out_d = pickle.load(handle)
+
+        with open('feat_vec_in.software.en.pickle', 'rb') as handle:
+            in_d = pickle.load(handle)
+
+        labels = - np.ones(out_d.shape[0])
+        predictions = - np.ones(out_d.shape[0])
+        labels[-50000:] = 1
+
+        kliep = KLIEP(init_b=100, seed=0)
+        kliep.fit_CV(in_d, out_d)
+
+        w = kliep.predict(out_d).ravel()
+        # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
+        # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
+        sorted_ind = np.argsort(w, axis=None)[::-1]
+        predictions[sorted_ind[0:50000]] = 1
+
+        p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
+        print 'Precision:', p,
+        print 'Recall:', r,
+        print 'F1:', f,
+        print 'Support:', s,
+
+
 if __name__ == '__main__':
     # main2(20)
-    main6('software')
+    # main6('software')
+    test('software')
