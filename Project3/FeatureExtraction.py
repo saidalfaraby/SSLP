@@ -6,6 +6,7 @@ import string
 from nltk.corpus import stopwords
 import dill as pickle
 import numpy as np
+import random
 
 
 class Features(object):
@@ -22,11 +23,20 @@ class Features(object):
     self.BTPOS_Freq = defaultdict(int)
     self.BN_Term = 0
 
-  def parse_doc(self, path):
+  def parse_doc(self, path, nrandom_sample=None):
     regex = re.compile('[%s]' % re.escape(string.punctuation))
-    f = open(path)
     i = 0
-    for sentence in f.readlines():
+    
+    f = open(path)
+    docs = f.readlines()
+    if nrandom_sample!=None:
+      newdocs = []
+      for idx in random.sample(range(len(docs)),nrandom_sample):
+        newdocs.append(docs[idx])
+      docs = newdocs
+    #print len(docs)
+    #print docs
+    for sentence in docs:
       sentence = nltk.pos_tag(nltk.word_tokenize(sentence))
       i += 1
       print i
@@ -65,23 +75,28 @@ class Features(object):
 
   def prune_dict(self, dictionary, bigram=0):
     keys = dictionary.keys()
+    n_removed =0
     for k in keys:
       if dictionary[k] <= 1:
         del dictionary[k]
-        if bigram == 0:
-          self.N_Term -= 1
-        elif bigram == 1:
-          self.BN_Term -= 1
+        n_removed +=1
+        #if bigram == 0:
+        #  self.N_Term -= 1
+        #elif bigram == 1:
+        #  self.BN_Term -= 1
+    return n_removed
 
   def prune(self):
     # unigram
     self.prune_dict(self.Term_Freq)
     self.prune_dict(self.POS_Freq)
-    self.prune_dict(self.TPOS_Freq)
+    uni_removed = self.prune_dict(self.TPOS_Freq)
+    self.N_Term -= uni_removed
     # bigram
     self.prune_dict(self.BTerm_Freq, bigram=1)
     self.prune_dict(self.BPOS_Freq, bigram=1)
-    self.prune_dict(self.BTPOS_Freq, bigram=1)
+    bi_removed = self.prune_dict(self.BTPOS_Freq, bigram=1)
+    self.BN_Term -= bi_removed
 
   def update_count(self, t, p, bigrams=0):
     if bigrams == 0:
@@ -195,12 +210,14 @@ class Features(object):
 
 if __name__ == '__main__':
     F = Features()
-    # F.parse_doc('project3_data_selection/legal.half.en')
-    # F.parse_doc('project3_data_selection/out.mixed.legal.en')
-    # F.save('in_model.pickle')
-    # F.save('full_mix_model.pickle')
-    F.load('in_model.pickle')
+    #F.parse_doc('project3_data_selection/legal.half.en')
+    F.parse_doc('project3_data_selection/out.mixed.legal.en')
+    #F.save('in_model.pickle')
+    #F.save('sample_mix_model.pickle')
+    F.save('mix_model.pickle')
+    #F.load('in_model.pickle')
     print len(F.Term_Freq)
+    print F.Term_Freq.keys()
     print len(F.POS_Freq)
     print len(F.TPOS_Freq)
     print F.N_Term
