@@ -33,8 +33,7 @@ class W2V(object):
             if type_pooling is 'average_p':
                 data.append(sum(feat_vec)/len(sent))
             elif type_pooling is 'max_p':
-                tmp = np.asarray(feat_vec)
-                data.append(np.amax(tmp, axis=0))
+                data.append(np.amax(np.asarray(feat_vec), axis=0))
         return np.asarray(data)
 
     def load(self, type_domain):
