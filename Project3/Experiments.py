@@ -11,6 +11,11 @@ import dill as pickle
 from w2vec_model import W2V
 
 
+def create_W2Vmodel(type_d, size_h=10):
+    w2v = W2V(type_d, 'out.mixed.'+type_d+'.en', type_d+'.half.en', size=size_h)
+    w2v.fit()
+
+
 def experiment_w2vSVM(type_d, type_pooling='max_p'):
     if type_d is 'legal':
         domain = 'legal.half.en'
@@ -81,12 +86,12 @@ def experiment_w2vKLIEP(type_d, type_pooling='max_p'):
     print 'parsed size:', test_data.shape
 
     kliep = KLIEP(init_b=100, seed=0)
-    kliep.fit_CV(test_data, train_data)
+    kliep.fit_CV(train_data, test_data)
     predictions = - np.ones(len(uni_sentences_out))
     w = kliep.predict(test_data).ravel()
     # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
     # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
-    sorted_ind = np.argsort(w, axis=None)[::-1]
+    sorted_ind = np.argsort(w, axis=None)  # [::-1]
     predictions[sorted_ind[0:50000]] = 1
 
     p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
@@ -146,7 +151,7 @@ def experiment_tfidfKLIEP(type_d):
     w = kliep.predict(t_out_sent).ravel()
     # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
     # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
-    sorted_ind = np.argsort(w, axis=None)[::-1]
+    sorted_ind = np.argsort(w, axis=None)  # [::-1]
     predictions[sorted_ind[0:50000]] = 1
 
     p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
@@ -213,7 +218,7 @@ def experiment_LMKLIEP(which_d):
     labels[-50000:] = 1
 
     kliep = KLIEP(init_b=100, seed=0)
-    kliep.fit_CV(out_d, in_d)
+    kliep.fit_CV(in_d, out_d)
 
     w = kliep.predict(out_d).ravel()
     # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
@@ -229,8 +234,9 @@ def experiment_LMKLIEP(which_d):
 
 
 if __name__ == '__main__':
+    # create_W2Vmodel('legal', size_h=10)
     # experiment_w2vSVM('legal', type_pooling='max_p')
-    experiment_w2vKLIEP('legal', type_pooling='max_p')
+    experiment_w2vKLIEP('legal', type_pooling='average_p')
     # experiment_tfidfKLIEP('legal')
     # construct_LMfeatVec('legal', parse=False)
     # experiment_LMKLIEP('legal')
