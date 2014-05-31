@@ -21,33 +21,52 @@ class IntelligentSelection(object):
     self.include_pos = False
 
 
-  def entropy_score(self,termpos, find_threshold=False):
+  def entropy_score(self,termpos, find_threshold=False, is_bigram = True):
   #score based on difference of cross entropy
   #sentences have been tokenized and pos tagged
     
     IN = self.In_Model
     MIX = self.Mix_Model
-    sc_term_in = 0
-    sc_term_mix = 0
-    sc_pos_in = 0
-    sc_pos_mix = 0
+    sc_term_in, sc_term_mix, sc_pos_in, sc_pos_mix = (0,0,0,0)
+    sc_bi_term_in, sc_bi_pos_in, sc_bi_term_mix, sc_bi_pos_mix = (0,0,0,0)
+
     if len(termpos)==0 or MIX.N_Term<-99999:
       return -99999 if find_threshold else 99999
     for t,p in termpos:
       sc_term_in += -np.log(IN.Term_Freq[t]/IN.N_Term) 
-      sc_pos_in+= -np.log(IN.POS_Freq[t,p]/IN.N_Term)
-    if MIX!=None and self.dual_score:
-      sc_term_mix += -np.log(MIX.Term_Freq[t]/MIX.N_Term) 
-      sc_pos_mix+= -np.log(MIX.POS_Freq[t,p]/MIX.N_Term)
-      if IN.N_Term==0 or MIX.N_Term ==0 or MIX.Term_Freq[t]==0 or MIX.POS_Freq[t,p]==0:
-        print 'something is zero'
-        print 'TERM ',MIX.Term_Freq[t]
-        print 'POS', MIX.POS_Freq[t,p]
+      sc_pos_in+= -np.log(IN.TPOS_Freq[t,p]/IN.N_Term)
+      if MIX!=None and self.dual_score:
+        sc_term_mix += -np.log(MIX.Term_Freq[t]/MIX.N_Term) 
+        sc_pos_mix+= -np.log(MIX.TPOS_Freq[t,p]/MIX.N_Term)
+    
+    if is_bigram:
+      # bigrams
+      words = [elem[0] for elem in termpos]
+      pos_tags = [elem[1] for elem in termpos]
+      b_words = nltk.bigrams(words)
+      b_pos = nltk.bigrams(pos_tags)
+      if len(b_words) > 0:
+        for b_w, b_p in zip(b_words, b_pos):
+          sc_bi_term_in += -np.log(IN.BTerm_Freq[t]/IN.BN_Term) 
+          sc_bi_pos_in+= -np.log(IN.BTPOS_Freq[t,p]/IN.BN_Term)
+          if MIX!=None and self.dual_score:
+            sc_bi_term_mix += -np.log(MIX.BTerm_Freq[t]/MIX.BN_Term) 
+            sc_bi_pos_mix+= -np.log(MIX.BTPOS_Freq[t,p]/MIX.BN_Term)
+
+      sc_term_in += sc_bi_term_in
+      sc_pos_in += sc_bi_pos_in
+      sc_term_mix += sc_bi_term_mix
+      sc_pos_mix += sc_bi_pos_mix
+      # if IN.N_Term==0 or MIX.N_Term ==0 or MIX.Term_Freq[t]==0 or MIX.POS_Freq[t,p]==0:
+      #   print 'something is zero'
+      #   print 'TERM ',MIX.Term_Freq[t]
+      #   print 'POS', MIX.POS_Freq[t,p]
     if self.include_pos :
       # return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
       return (sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix)
     # return (sc_term_in-sc_term_mix)/len(termpos)
     return sc_term_in-sc_term_mix
+
   def select(self, threshold, is_update=False):
     self.log('selecting ...')
     for mix in self.Mix_Docs:
@@ -138,7 +157,8 @@ if __name__ == '__main__':
 
   In_Model = Features()
   Mix_Model = Features()
-  In_Model.load()
+  In_Model.load('in_model.pickle')
+  Mix_Model.load('sample_mix_model.pickle')
   IS = IntelligentSelection(In_Model,Mix_Model)
   IS.include_pos = False
   IS.dual_score = True
@@ -148,14 +168,14 @@ if __name__ == '__main__':
   # th = IS.findThreshold()
   # IS.parse_mix_doc('project3_data_selection/out.mixed.legal.en')
   # IS.save('legal_dev_doc.pickle')
-  IS.load()
-  
-  for idx in random.sample(range(500000),50000):
-    for t,p in IS.Mix_Docs[idx]['termpos']:
-      Mix_Model.update_count(t,p)
-  print Mix_Model.N_Term
-  print len(Mix_Model.Term_Freq)
-  Mix_Model.set_lambda(1)
+  # IS.load('legal_dev_doc.pickle')
+  # th = IS.findThreshold()
+  # for idx in random.sample(range(500000),50000):
+  #   for t,p in IS.Mix_Docs[idx]['termpos']:
+  #     Mix_Model.update_count(t,p)
+  # print Mix_Model.N_Term
+  # print len(Mix_Model.Term_Freq)
+  # Mix_Model.set_lambda(1)
   # IS.Mix_Model = Mix_Model
 
   # Mix_Model.save('mix_model.pickle')
@@ -168,7 +188,8 @@ if __name__ == '__main__':
   # IS.save('legal_dev_doc.pickle')
 
   # th=IS.findThreshold()
-  IS.select(th)
+  IS.load('mix_doc.pickle')
+  IS.select(2.8)
   # label = range(2000)
   label = range(450000,500000)
   m = IS.measure(label)
