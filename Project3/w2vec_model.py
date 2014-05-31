@@ -1,9 +1,9 @@
 from __future__ import division
 from gensim.models import Word2Vec
 import numpy as np
-# import logging
+import logging
 
-# logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 class W2V(object):
