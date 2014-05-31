@@ -1,5 +1,4 @@
 from __future__ import division
-import logging
 import numpy as np
 from sklearn import svm
 from sklearn.metrics import precision_recall_fscore_support
@@ -9,65 +8,76 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import MinMaxScaler
 from FeatureExtraction import Features
 import dill as pickle
+from w2vec_model import W2V
 
 
-def main3():
-    from gensim.models import Word2Vec
-    from utils import create_w2v_dataset
+def experiment_w2vSVM(type_d):
+    if type_d is 'legal':
+        domain = 'legal.half.en'
+        domain_out = 'out.mixed.legal.en'
+        model = W2V('legal', '', '')
+        model.load('legal')
+    elif type_d is 'software':
+        domain = 'software.half.en'
+        domain_out = 'out.mixed.software.en'
+        model = W2V('software', '', '')
+        model.load('software')
 
-    domain = 'legal.half.en'
     with open('project3_data_selection/'+domain, 'rb') as doc:
         uni_sentences = [sentence.split() for sentence in doc.readlines()]
-    model = Word2Vec.load('w2vec_legal')
 
     print 'Getting training data...'
-    train_data = create_w2v_dataset(uni_sentences, model)
+    train_data = model.create_dataset(uni_sentences, type_pooling='max_p')
 
     print 'Fitting one class SVM'
     clf = svm.OneClassSVM(kernel='linear')
     clf.fit(train_data)
 
     print 'Getting testing data...'
-    domain_out = 'out.mixed.legal.en'
     with open('project3_data_selection/'+domain_out, 'rb') as doc:
         uni_sentences_out = [sentence.split() for sentence in doc.readlines()]
 
     labels = - np.ones(len(uni_sentences_out))
     labels[-50000:] = 1
-    test_data = create_w2v_dataset(uni_sentences_out, model)
+    test_data = model.create_dataset(uni_sentences_out, type_pooling='max_p')
 
     print 'Predicting for test data...'
     predictions = clf.predict(test_data)
 
     print np.where(predictions == 1)
     p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
-    print 'Precision:', p
-    print 'Recall:', r
-    print 'F1:', f
-    print 'Support:', s
+    print 'Precision:', p,
+    print 'Recall:', r,
+    print 'F1:', f,
+    print 'Support:', s,
 
 
-def main4():
-    from gensim.models import Word2Vec
-    from utils import create_w2v_dataset
+def experiment_w2vKLIEP(type_d):
+    if type_d is 'legal':
+        domain = 'legal.half.en'
+        domain_out = 'out.mixed.legal.en'
+        model = W2V('legal', '', '')
+        model.load('legal')
+    elif type_d is 'software':
+        domain = 'software.half.en'
+        domain_out = 'out.mixed.software.en'
+        model = W2V('software', '', '')
+        model.load('software')
 
-    domain = 'legal.half.en'
     with open('project3_data_selection/'+domain, 'rb') as doc:
         uni_sentences = [sentence.split() for sentence in doc.readlines()]
-    model = Word2Vec.load('w2vec_legal')
 
     print 'Getting training data...'
-    train_data = create_w2v_dataset(uni_sentences, model)
+    train_data = model.create_dataset(uni_sentences, type_pooling='max_p')
     print 'parsed size:', train_data.shape
 
     print 'Getting testing data...'
-    domain_out = 'out.mixed.legal.en'
     with open('project3_data_selection/'+domain_out, 'rb') as doc:
         uni_sentences_out = [sentence.split() for sentence in doc.readlines()]
 
     labels = - np.ones(len(uni_sentences_out))
     labels[-50000:] = 1
-    test_data = create_w2v_dataset(uni_sentences_out, model)
+    test_data = model.create_dataset(uni_sentences_out, type_pooling='max_p')
     print 'parsed size:', test_data.shape
 
     kliep = KLIEP(init_b=100, seed=0)
@@ -86,7 +96,14 @@ def main4():
     print 'Support:', s
 
 
-def main5():
+def experiment_tfidfKLIEP(type_d):
+    if type_d is 'legal':
+        domain = 'legal.half.en'
+        domain_out = 'out.mixed.legal.en'
+    elif type_d is 'software':
+        domain = 'software.half.en'
+        domain_out = 'out.mixed.software.en'
+
     vectorizer = TfidfVectorizer(min_df=2,
     ngram_range=(1, 2),
     stop_words='english',
@@ -100,7 +117,6 @@ def main5():
     norm='l2')
 
     print 'Getting training data...'
-    domain = 'legal.half.en'
     with open('project3_data_selection/'+domain, 'rb') as doc:
         uni_sentences = [sentence for sentence in doc.readlines()]
 
@@ -112,7 +128,6 @@ def main5():
     print 'parsed size:', t_in_sent.shape
 
     print 'Getting testing data...'
-    domain_out = 'out.mixed.legal.en'
     with open('project3_data_selection/'+domain_out, 'rb') as doc:
         uni_sentences_out = [sentence for sentence in doc.readlines()]
 
@@ -135,88 +150,53 @@ def main5():
     predictions[sorted_ind[0:50000]] = 1
 
     p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
-    print 'Precision:', p
-    print 'Recall:', r
-    print 'F1:', f
-    print 'Support:', s
+    print 'Precision:', p,
+    print 'Recall:', r,
+    print 'F1:', f,
+    print 'Support:', s,
 
 
-def main6(which_d):
-    if which_d is 'legal':
-        F = Features()
-        F.parse_doc('project3_data_selection/legal.half.en')
-        F.save('lms_in_domain.pickle')
-
-        F2 = Features()
-        F2.parse_doc('project3_data_selection/out.mixed.legal.en')
-        F2.save('lms_out_domain.pickle')
-
-        In = Features()
-        In.load('lms_in_domain.pickle')
-
-        Out = Features()
-        Out.load('lms_out_domain.pickle')
-
-        print 'Getting training data...'
+def construct_featVec(type_d, parse=False):
+    if type_d is 'legal':
         domain = 'legal.half.en'
-
-        with open('project3_data_selection/'+domain, 'rb') as doc:
-            uni_sentences = [sentence for sentence in doc.readlines()]
-
-        print 'Getting testing data...'
         domain_out = 'out.mixed.legal.en'
-
-        with open('project3_data_selection/'+domain_out, 'rb') as doc:
-            uni_sentences_out = [sentence for sentence in doc.readlines()]
-
-        save_in = 'feat_vec_in.legal.en.pickle'
-
-        in_d = In.construct_features(uni_sentences, use_smoothing=False)
-        with open(save_in, 'wb') as handle:
-            pickle.dump(in_d, handle)
-
-        save_out = 'feat_vec_out.legal.en.pickle'
-        out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
-        with open(save_out, 'wb') as handle:
-            pickle.dump(out_d, handle)
-
-    elif which_d is 'software':
-        F = Features()
-        F.parse_doc('project3_data_selection/software.half.en')
-        F.save('lms_in_domain_soft.pickle')
-
-        F2 = Features()
-        F2.parse_doc('project3_data_selection/out.mixed.software.en')
-        F2.save('lms_out_domain_soft.pickle')
-
-        In = Features()
-        In.load('lms_in_domain_soft.pickle')
-
-        Out = Features()
-        Out.load('lms_out_domain_soft.pickle')
-
-        print 'Getting training data...'
+    elif type_d is 'software':
         domain = 'software.half.en'
-
-        with open('project3_data_selection/'+domain, 'rb') as doc:
-            uni_sentences = [sentence for sentence in doc.readlines()]
-
-        print 'Getting testing data...'
         domain_out = 'out.mixed.software.en'
 
-        with open('project3_data_selection/'+domain_out, 'rb') as doc:
-            uni_sentences_out = [sentence for sentence in doc.readlines()]
+    if parse:
+        In = Features()
+        In.parse_doc('project3_data_selection/'+domain)
+        In.save('lms_in_domain_'+type_d+'.pickle')
 
-        save_in = 'feat_vec_in.software.en.pickle'
+        Out = Features()
+        Out.parse_doc('project3_data_selection/'+domain_out)
+        Out.save('lms_out_domain_'+type_d+'.pickle')
+    else:
+        In = Features()
+        In.load('lms_in_domain_'+type_d+'.pickle')
 
-        in_d = In.construct_features(uni_sentences, use_smoothing=False)
-        with open(save_in, 'wb') as handle:
-            pickle.dump(in_d, handle)
+        Out = Features()
+        Out.load('lms_out_domain_'+type_d+'.pickle')
 
-        save_out = 'feat_vec_out.software.en.pickle'
-        out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
-        with open(save_out, 'wb') as handle:
-            pickle.dump(out_d, handle)
+    print 'Getting training data...'
+    with open('project3_data_selection/'+domain, 'rb') as doc:
+        uni_sentences = [sentence for sentence in doc.readlines()]
+
+    print 'Getting testing data...'
+    with open('project3_data_selection/'+domain_out, 'rb') as doc:
+        uni_sentences_out = [sentence for sentence in doc.readlines()]
+
+    save_in = 'feat_vec_in.'+type_d+'.en.pickle'
+
+    in_d = In.construct_features(uni_sentences, use_smoothing=False)
+    with open(save_in, 'wb') as handle:
+        pickle.dump(in_d, handle)
+
+    save_out = 'feat_vec_out.'+type_d+'.en.pickle'
+    out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
+    with open(save_out, 'wb') as handle:
+        pickle.dump(out_d, handle)
 
     print in_d.shape, out_d.shape
 
