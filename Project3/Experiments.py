@@ -11,7 +11,7 @@ import dill as pickle
 from w2vec_model import W2V
 
 
-def experiment_w2vSVM(type_d):
+def experiment_w2vSVM(type_d, type_pooling='max_p'):
     if type_d is 'legal':
         domain = 'legal.half.en'
         domain_out = 'out.mixed.legal.en'
@@ -27,7 +27,7 @@ def experiment_w2vSVM(type_d):
         uni_sentences = [sentence.split() for sentence in doc.readlines()]
 
     print 'Getting training data...'
-    train_data = model.create_dataset(uni_sentences, type_pooling='max_p')
+    train_data = model.create_dataset(uni_sentences, type_pooling=type_pooling)
 
     print 'Fitting one class SVM'
     clf = svm.OneClassSVM(kernel='linear')
@@ -39,7 +39,7 @@ def experiment_w2vSVM(type_d):
 
     labels = - np.ones(len(uni_sentences_out))
     labels[-50000:] = 1
-    test_data = model.create_dataset(uni_sentences_out, type_pooling='max_p')
+    test_data = model.create_dataset(uni_sentences_out, type_pooling=type_pooling)
 
     print 'Predicting for test data...'
     predictions = clf.predict(test_data)
@@ -52,7 +52,7 @@ def experiment_w2vSVM(type_d):
     print 'Support:', s,
 
 
-def experiment_w2vKLIEP(type_d):
+def experiment_w2vKLIEP(type_d, type_pooling='max_p'):
     if type_d is 'legal':
         domain = 'legal.half.en'
         domain_out = 'out.mixed.legal.en'
@@ -68,7 +68,7 @@ def experiment_w2vKLIEP(type_d):
         uni_sentences = [sentence.split() for sentence in doc.readlines()]
 
     print 'Getting training data...'
-    train_data = model.create_dataset(uni_sentences, type_pooling='max_p')
+    train_data = model.create_dataset(uni_sentences, type_pooling=type_pooling)
     print 'parsed size:', train_data.shape
 
     print 'Getting testing data...'
@@ -77,7 +77,7 @@ def experiment_w2vKLIEP(type_d):
 
     labels = - np.ones(len(uni_sentences_out))
     labels[-50000:] = 1
-    test_data = model.create_dataset(uni_sentences_out, type_pooling='max_p')
+    test_data = model.create_dataset(uni_sentences_out, type_pooling=type_pooling)
     print 'parsed size:', test_data.shape
 
     kliep = KLIEP(init_b=100, seed=0)
@@ -90,10 +90,10 @@ def experiment_w2vKLIEP(type_d):
     predictions[sorted_ind[0:50000]] = 1
 
     p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
-    print 'Precision:', p
-    print 'Recall:', r
-    print 'F1:', f
-    print 'Support:', s
+    print 'Precision:', p,
+    print 'Recall:', r,
+    print 'F1:', f,
+    print 'Support:', s,
 
 
 def experiment_tfidfKLIEP(type_d):
@@ -156,7 +156,7 @@ def experiment_tfidfKLIEP(type_d):
     print 'Support:', s,
 
 
-def construct_featVec(type_d, parse=False):
+def construct_LMfeatVec(type_d, parse=False):
     if type_d is 'legal':
         domain = 'legal.half.en'
         domain_out = 'out.mixed.legal.en'
@@ -201,61 +201,36 @@ def construct_featVec(type_d, parse=False):
     print in_d.shape, out_d.shape
 
 
-def test(which_d):
-    if which_d is 'legal':
-        with open('feat_vec_out.legal.en.pickle', 'rb') as handle:
-            out_d = pickle.load(handle)
+def experiment_LMKLIEP(which_d):
+    with open('feat_vec_out.'+which_d+'legal.en.pickle', 'rb') as handle:
+        out_d = pickle.load(handle)
 
-        with open('feat_vec_in.legal.en.pickle', 'rb') as handle:
-            in_d = pickle.load(handle)
+    with open('feat_vec_in.'+which_d+'.en.pickle', 'rb') as handle:
+        in_d = pickle.load(handle)
 
-        labels = - np.ones(out_d.shape[0])
-        predictions = - np.ones(out_d.shape[0])
-        labels[-50000:] = 1
+    labels = - np.ones(out_d.shape[0])
+    predictions = - np.ones(out_d.shape[0])
+    labels[-50000:] = 1
 
-        kliep = KLIEP(init_b=100, seed=0)
-        kliep.fit_CV(out_d, in_d)
+    kliep = KLIEP(init_b=100, seed=0)
+    kliep.fit_CV(out_d, in_d)
 
-        w = kliep.predict(out_d).ravel()
-        # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
-        # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
-        sorted_ind = np.argsort(w, axis=None)  # [::-1]
-        predictions[sorted_ind[0:50000]] = 1
+    w = kliep.predict(out_d).ravel()
+    # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
+    # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
+    sorted_ind = np.argsort(w, axis=None)  # [::-1]
+    predictions[sorted_ind[0:50000]] = 1
 
-        p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
-        print 'Precision:', p,
-        print 'Recall:', r,
-        print 'F1:', f,
-        print 'Support:', s,
-
-    elif which_d is 'software':
-        with open('feat_vec_out.software.en.pickle', 'rb') as handle:
-            out_d = pickle.load(handle)
-
-        with open('feat_vec_in.software.en.pickle', 'rb') as handle:
-            in_d = pickle.load(handle)
-
-        labels = - np.ones(out_d.shape[0])
-        predictions = - np.ones(out_d.shape[0])
-        labels[-50000:] = 1
-
-        kliep = KLIEP(init_b=100, seed=0)
-        kliep.fit_CV(in_d, out_d)
-
-        w = kliep.predict(out_d).ravel()
-        # predictions[np.where(w > 2.5)[0]] = 1   # w = p_te/p_tr
-        # print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', test_data.shape[0]
-        sorted_ind = np.argsort(w, axis=None)[::-1]
-        predictions[sorted_ind[0:50000]] = 1
-
-        p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
-        print 'Precision:', p,
-        print 'Recall:', r,
-        print 'F1:', f,
-        print 'Support:', s,
+    p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
+    print 'Precision:', p,
+    print 'Recall:', r,
+    print 'F1:', f,
+    print 'Support:', s,
 
 
 if __name__ == '__main__':
-    # main2(20)
-    # main6('software')
-    test('software')
+    # experiment_w2vSVM('legal', type_pooling='max_p')
+    experiment_w2vKLIEP('legal', type_pooling='max_p')
+    # experiment_tfidfKLIEP('legal')
+    # construct_LMfeatVec('legal', parse=False)
+    # experiment_LMKLIEP('legal')
