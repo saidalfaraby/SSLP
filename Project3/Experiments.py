@@ -230,7 +230,7 @@ def experiment_tfidfKLIEP(type_d, topics=100):
     print 'Support:', s,
 
 
-def construct_LMfeatVec(type_d, parse=False):
+def construct_LMfeatVec(type_d, parse=False, prune='noprune'):
     if type_d is 'legal':
         domain = 'legal.half.en'
         domain_out = 'out.mixed.legal.en'
@@ -248,10 +248,12 @@ def construct_LMfeatVec(type_d, parse=False):
         Out.save('lms_out_domain_'+type_d+'.pickle')
     else:
         In = Features()
-        In.load('lms_in_domain_'+type_d+'.pickle')
+        # In.load('lms_in_domain_'+type_d+'.pickle')
+        In.load(type_d+'_in_model_'+prune+'.pickle')
 
         Out = Features()
-        Out.load('lms_out_domain_'+type_d+'.pickle')
+        # Out.load('lms_out_domain_'+type_d+'.pickle')
+        Out.load(type_d+'_sample_mix_model_'+prune+'.pickle')
 
     print 'Getting training data...'
     with open('project3_data_selection/'+domain, 'rb') as doc:
@@ -263,12 +265,12 @@ def construct_LMfeatVec(type_d, parse=False):
 
     save_in = 'feat_vec_in.'+type_d+'.en.pickle'
 
-    in_d = In.construct_features(uni_sentences, use_smoothing=False)
+    in_d = In.construct_features(uni_sentences, use_smoothing=True)
     with open(save_in, 'wb') as handle:
         pickle.dump(in_d, handle)
 
     save_out = 'feat_vec_out.'+type_d+'.en.pickle'
-    out_d = Out.construct_features(uni_sentences_out, use_smoothing=False)
+    out_d = Out.construct_features(uni_sentences_out, use_smoothing=True)
     with open(save_out, 'wb') as handle:
         pickle.dump(out_d, handle)
 
@@ -276,7 +278,7 @@ def construct_LMfeatVec(type_d, parse=False):
 
 
 def experiment_LMKLIEP(which_d):
-    with open('feat_vec_out.'+which_d+'legal.en.pickle', 'rb') as handle:
+    with open('feat_vec_out.'+which_d+'.en.pickle', 'rb') as handle:
         out_d = pickle.load(handle)
 
     with open('feat_vec_in.'+which_d+'.en.pickle', 'rb') as handle:
@@ -302,6 +304,39 @@ def experiment_LMKLIEP(which_d):
     print 'Support:', s,
 
 
+def experimentLMKLIEP_per_feat(which_d):
+    with open('feat_vec_out.'+which_d+'.en.pickle', 'rb') as handle:
+        out_d = pickle.load(handle)
+
+    with open('feat_vec_in.'+which_d+'.en.pickle', 'rb') as handle:
+        in_d = pickle.load(handle)
+
+    labels = - np.ones(out_d.shape[0])
+    predictions = - np.ones(out_d.shape[0])
+    labels[-50000:] = 1
+
+    W = np.zeros(out_d.shape)
+
+    for i in xrange(W.shape[1]):
+        kliep = KLIEP(init_b=100, seed=0)
+        lm_out = out_d[:, i].reshape((out_d.shape[0], 1))
+        lm_in = in_d[:, i].reshape((in_d.shape[0], 1))
+        kliep.fit_CV(lm_out, lm_in)
+        W[:, i] = kliep.predict(lm_out).ravel()
+
+    w = np.mean(W, axis=1)
+    predictions[np.where(w > 1.5)[0]] = 1
+    print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', out_d.shape[0]
+    # sorted_ind = np.argsort(w, axis=None)[::-1]
+    # predictions[sorted_ind[0:50000]] = 1
+
+    p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
+    print 'Precision:', p,
+    print 'Recall:', r,
+    print 'F1:', f,
+    print 'Support:', s,
+
+
 if __name__ == '__main__':
     # average pooling seems to work better than max pooling
     # create_W2Vmodel('software', size_h=20)
@@ -316,8 +351,9 @@ if __name__ == '__main__':
     # experiment_tfidfKLIEP('legal', topics=100)
     # experiment_tfidfKLIEP('software', topics=100)
 
-    experiment_tfidfSVM('legal', topics=100)
+    # experiment_tfidfSVM('legal', topics=100)  # P: 0.32, R: 0.55, F1: 0.4
     # experiment_tfidfSVM('software', topics=100)
 
+    # experimentLMKLIEP_per_feat('legal')
     # construct_LMfeatVec('legal', parse=False)
-    # experiment_LMKLIEP('legal')
+    experiment_LMKLIEP('legal')
