@@ -46,10 +46,11 @@ class IntelligentSelection(object):
     
     if self.is_bigram:
       # bigrams
-      words = [elem[0] for elem in termpos]
-      pos_tags = [elem[1] for elem in termpos]
-      b_words = nltk.bigrams(words)
-      b_pos = nltk.bigrams(pos_tags)
+      b_words, b_pos = self.In_Model.to_bigram(termpos)
+      # words = [elem[0] for elem in termpos]
+      # pos_tags = [elem[1] for elem in termpos]
+      # b_words = nltk.bigrams(words)
+      # b_pos = nltk.bigrams(pos_tags)
       if len(b_words) > 0:
         for t, p in zip(b_words, b_pos):
           sc_bi_term_in += -np.log(IN.BTerm_Freq[t]/IN.BN_Term) 
@@ -62,10 +63,6 @@ class IntelligentSelection(object):
       sc_pos_in += sc_bi_pos_in
       sc_term_mix += sc_bi_term_mix
       sc_pos_mix += sc_bi_pos_mix
-      # if IN.N_Term==0 or MIX.N_Term ==0 or MIX.Term_Freq[t]==0 or MIX.POS_Freq[t,p]==0:
-      #   print 'something is zero'
-      #   print 'TERM ',MIX.Term_Freq[t]
-      #   print 'POS', MIX.POS_Freq[t,p]
     if self.include_pos :
       # return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
       return (sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix)
@@ -83,19 +80,16 @@ class IntelligentSelection(object):
 
     if len(termpos)==0 or MIX.N_Term<-99999:
       return 0 if find_threshold else 0
-    for t,p in termpos:
-      sc_term_in *= IN.Term_Freq[t]/IN.N_Term 
-      sc_pos_in*= IN.TPOS_Freq[t,p]/IN.N_Term
-      if MIX!=None and self.dual_score:
-        sc_term_mix *= MIX.Term_Freq[t]/MIX.N_Term
-        sc_pos_mix*= MIX.TPOS_Freq[t,p]/MIX.N_Term
+
+    if self.is_unigram:
+      for t,p in termpos:
+        sc_term_in *= IN.Term_Freq[t]/IN.N_Term 
+        sc_pos_in*= IN.TPOS_Freq[t,p]/IN.N_Term
+        if MIX!=None and self.dual_score:
+          sc_term_mix *= MIX.Term_Freq[t]/MIX.N_Term
+          sc_pos_mix*= MIX.TPOS_Freq[t,p]/MIX.N_Term
     
-    if is_bigram:
-      # bigrams
-      # words = [elem[0] for elem in termpos]
-      # pos_tags = [elem[1] for elem in termpos]
-      # b_words = nltk.bigrams(words)
-      # b_pos = nltk.bigrams(pos_tags)
+    if self.is_bigram:
       b_words, b_pos = self.In_Model.to_bigram(termpos)
       if len(b_words) > 0:
         for b_w, b_p in zip(b_words, b_pos):
@@ -105,19 +99,25 @@ class IntelligentSelection(object):
             sc_bi_term_mix *= MIX.BTerm_Freq[t]/MIX.BN_Term
             sc_bi_pos_mix*= MIX.BTPOS_Freq[t,p]/MIX.BN_Term
 
-      sc_term_in += sc_bi_term_in
-      sc_pos_in += sc_bi_pos_in
-      sc_term_mix += sc_bi_term_mix
-      sc_pos_mix += sc_bi_pos_mix
+      sc_term_in *= sc_bi_term_in
+      sc_pos_in *= sc_bi_pos_in
+      sc_term_mix *= sc_bi_term_mix
+      sc_pos_mix *= sc_bi_pos_mix
       # if IN.N_Term==0 or MIX.N_Term ==0 or MIX.Term_Freq[t]==0 or MIX.POS_Freq[t,p]==0:
       #   print 'something is zero'
       #   print 'TERM ',MIX.Term_Freq[t]
       #   print 'POS', MIX.POS_Freq[t,p]
     if self.include_pos :
       # return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
-      return (sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix)
+      try :
+        return (sc_term_in*sc_pos_in)/(sc_term_mix*sc_pos_mix)
+      except :
+        return 99999
     # return (sc_term_in-sc_term_mix)/len(termpos)
-    return sc_term_in-sc_term_mix
+    try :
+      return sc_term_in/sc_term_mix
+    except :
+      return 99999
 
   def select(self, threshold=None, is_update=False, retrieve_per_iteration=None, n_iteration=1):
 
@@ -129,13 +129,46 @@ class IntelligentSelection(object):
     self.log('is update : '+str(is_update))
     self.log('retrieve per iteration : '+str(retrieve_per_iteration))
     self.log('number of iteration : '+str(n_iteration))
+    label = range(450000,500000)
+    scoring_function = self.entropy_score
     if threshold!=None and not is_update:
       for mix in self.Mix_Docs:
-        mix['score'] = self.entropy_score(mix['termpos'])
+        mix['score'] = scoring_function(mix['termpos'])
         if mix['docID']<450000 and mix['score']<99999 and mix['score']>-99999:
           self.scores.append(mix['score'])
         if mix['score'] < threshold:
           self.Selected_Docs.append(mix['docID'])
+    if threshold !=None and is_update:
+      it = 0
+      lr = 1
+      decay = 0.8
+      selected_documents = []
+      for i in range(n_iteration):
+        it+=1
+        lr*=decay
+        random.shuffle(self.Mix_Docs)
+        print 'iteration : ',it
+        for mix in self.Mix_Docs:
+          mix['score'] = self.entropy_score(mix['termpos'])
+          if mix['score'] < threshold:
+            self.Selected_Docs.append(mix['docID'])
+            selected_documents.append(mix)
+            
+        for mix in selected_documents:
+          #update unigram model
+          for token, pos in mix['termpos']:
+            self.In_Model.update_count2(token,pos, lr*(1+threshold-mix['score']))
+              # self.Mix_Model.update_count2(token, pos, -(1+np.exp(threshold-mix['score'])))
+            #update bigram model
+          b_words, b_pos = self.In_Model.to_bigram(mix['termpos'])
+          for b_w, b_p in zip(b_words, b_pos):
+            self.In_Model.update_count2(b_w, b_p, lr*(1+threshold-mix['score']), bigrams=1)
+              # self.Mix_Model.update_count2(b_w, b_p, -(1+np.exp(threshold-mix['score'])), bigrams=1)
+        self.measure(label)
+        if it!=n_iteration:
+          self.Selected_Docs = []
+        selected_documents = []
+
     elif is_update and retrieve_per_iteration!=None:
       it = 0
       for i in range(n_iteration):
@@ -167,7 +200,10 @@ class IntelligentSelection(object):
     self.log('retrieve :'+str(len(self.Selected_Docs)))
     intersection = list(set(label)&set(self.Selected_Docs))
     self.log('intersection : '+str(len(intersection)))
-    return {'precision': len(intersection)/len(self.Selected_Docs), 'recall':len(intersection)/len(label)}
+    try :
+      return {'precision': len(intersection)/len(self.Selected_Docs), 'recall':len(intersection)/len(label)}
+    except : 
+      return {'precision': 0, 'recall':len(intersection)/len(label)}
 
   def findThreshold(self):
     self.log('finding threshold')
@@ -238,9 +274,8 @@ class IntelligentSelection(object):
     f.close()
 
 if __name__ == '__main__':
-  th = 8
-  in_model_file = 'software_in_model_noprune.pickle'
-  mix_model_file = 'software_mix_model_noprune.pickle'
+  in_model_file = 'legal_in_model_noprune.pickle'
+  mix_model_file = 'legal_mix_model_noprune.pickle'
   In_Model = Features()
   Mix_Model = Features()
   In_Model.load(in_model_file)
@@ -251,7 +286,7 @@ if __name__ == '__main__':
   IS.log('\n\n---------------------------')
   IS.log('in domain LM file : '+in_model_file)
   IS.log('mix domain LM file : '+mix_model_file)
-  IS.include_pos = True
+  IS.include_pos = False
   IS.dual_score = True
   IS.is_unigram = True
   IS.is_bigram = False
@@ -259,8 +294,8 @@ if __name__ == '__main__':
   # IS.log('run with threshold = '+str(th))
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
   # th = IS.findThreshold()
-  IS.parse_mix_doc('project3_data_selection/out.mixed.software.en')
-  IS.save('software_mix_doc.pickle')
+  # IS.parse_mix_doc('project3_data_selection/out.mixed.software.en')
+  # IS.save('software_mix_doc.pickle')
   # IS.load('legal_dev_doc.pickle')
   # th = IS.findThreshold()
   # for idx in random.sample(range(500000),50000):
@@ -281,9 +316,10 @@ if __name__ == '__main__':
   # IS.save('legal_dev_doc.pickle')
 
   # th=IS.findThreshold()
-  # IS.load('mix_doc.pickle')
-  # IS.select(is_update=True, retrieve_per_iteration=50000, n_iteration=1)
-  IS.select(-1.0)
+  IS.load('mix_doc.pickle')
+  # IS.load('software_mix_doc.pickle')
+  IS.select(threshold = -10, is_update=True, retrieve_per_iteration=None, n_iteration=5)
+  # IS.select(1.5)
   # label = range(2000)
   label = range(450000,500000)
   m = IS.measure(label)

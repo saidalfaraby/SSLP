@@ -119,6 +119,18 @@ class Features(object):
       self.BPOS_Freq[p] += 1
       self.BTPOS_Freq[(t, p)] += 1
 
+  def update_count2(self, t, p, val, bigrams=0):
+    if bigrams == 0:
+      self.Term_Freq[t] += val
+      self.TPOS_Freq[(t, p)] += val
+      self.N_Term += val
+      self.POS_Freq[p] += val
+    elif bigrams == 1:
+      self.BN_Term += 1
+      self.BTerm_Freq[t] += 1
+      self.BPOS_Freq[p] += 1
+      self.BTPOS_Freq[(t, p)] += 1
+
   def construct_features(self, sentences, use_smoothing=True):
     print 'creating features...'
 
