@@ -50,17 +50,26 @@ class Features(object):
           pass
 
       # estimate statistics for bigrams
-      words = [elem[0] for elem in sentence]
-      pos_tags = [elem[1] for elem in sentence]
+      # words = [elem[0] for elem in sentence]
+      # pos_tags = [elem[1] for elem in sentence]
 
-      b_words = nltk.bigrams(words)
-      b_pos = nltk.bigrams(pos_tags)
+      # b_words = nltk.bigrams(words)
+      # b_pos = nltk.bigrams(pos_tags)
+      b_words, b_pos = self.to_bigram(sentence)
 
       for b_w, b_p in zip(b_words, b_pos):
         self.update_count(b_w, b_p, bigrams=1)
 
     self.set_lambda(1)
     self.prune()
+
+  def to_bigram(self, termpos):
+    words = [elem[0] for elem in termpos]
+    pos_tags = [elem[1] for elem in termpos]
+
+    b_words = nltk.bigrams(words)
+    b_pos = nltk.bigrams(pos_tags)
+    return (b_words, b_pos)
 
   def set_lambda(self, v):
     # unigram
