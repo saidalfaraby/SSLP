@@ -22,8 +22,8 @@ class Features(object):
     self.Tr_POS_Freq = defaultdict(int)
     self.Tr_N_Term = 0
 
-    
-    
+
+
     self.BTerm_Freq = defaultdict(int)  # bigram frequency. Key = (term, term), Val = Frequency
     self.BPOS_Freq = defaultdict(int)  # bigram POS-tags. key = (POSTag, POSTag), Val = Frequency
     self.BTPOS_Freq = defaultdict(int)
@@ -158,15 +158,15 @@ class Features(object):
 
   def update_count3(self, t, p, vals, threshold, bigrams=0, type_d='in'):
     if bigrams == 0:
-      self.Term_Freq[t] += vals['un_term_'+type_d] + threshold
-      self.TPOS_Freq[(t, p)] += vals['un_tpos_'+type_d] + threshold
-      self.POS_Freq[p] += vals['un_pos_'+type_d] - threshold
-      self.N_Term += np.median([vals['un_term_'+type_d] + threshold,  vals['un_tpos_'+type_d]+ threshold, vals['un_pos_'+type_d]+ threshold])
+      self.Term_Freq[t] += threshold - vals['un_term_'+type_d]
+      self.TPOS_Freq[(t, p)] += threshold - vals['un_tpos_'+type_d]
+      self.POS_Freq[p] += threshold - vals['un_pos_'+type_d]
+      self.N_Term += np.median([threshold - vals['un_term_'+type_d], threshold - vals['un_tpos_'+type_d], threshold - vals['un_pos_'+type_d]])
     elif bigrams == 1:
-      self.BN_Term += np.median([vals['bi_term_'+type_d]+ threshold, vals['bi_pos_'+type_d]+ threshold, vals['bi_tpos_'+type_d]+ threshold])
-      self.BTerm_Freq[t] += vals['bi_term_'+type_d]+ threshold
-      self.BPOS_Freq[p] += vals['bi_pos_'+type_d]+ threshold
-      self.BTPOS_Freq[(t, p)] += vals['bi_tpos_'+type_d]+ threshold
+      self.BN_Term += np.median([threshold - vals['bi_term_'+type_d], threshold - vals['bi_pos_'+type_d], threshold - vals['bi_tpos_'+type_d]])
+      self.BTerm_Freq[t] += threshold - vals['bi_term_'+type_d]
+      self.BPOS_Freq[p] += threshold - vals['bi_pos_'+type_d]
+      self.BTPOS_Freq[(t, p)] += threshold - vals['bi_tpos_'+type_d]
 
   def construct_features(self, sentences, use_smoothing=True):
     print 'creating features...'
@@ -255,7 +255,7 @@ class Features(object):
     self.Trans_Freq = storage['Trans_Freq']
     self.N_Term = storage['N_Term']
 
-    try : 
+    try :
     # if True:
       self.Tr_Term_Freq = storage['Tr_Term_Freq']
       self.Tr_TPOS_Freq = storage['Tr_TPOS_Freq']

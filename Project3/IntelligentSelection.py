@@ -74,7 +74,10 @@ class IntelligentSelection(object):
       final_scores = [sc_term_in, sc_bi_term_in, sc_pos_in_only, sc_bi_pos_in_only, sc_pos_in, sc_bi_pos_in,
                     sc_term_mix, sc_bi_term_mix, sc_pos_mix_only, sc_bi_pos_mix_only, sc_pos_mix, sc_bi_pos_mix]
       for i, score in enumerate(self.type_score):
-        score_per_each[score] = final_scores[i]
+        if i < 6:
+          score_per_each[score] = final_scores[i] - final_scores[i+6]
+        else:
+          score_per_each[score] = final_scores[i] - final_scores[i-6]
 
       sc_term_in += sc_bi_term_in
       sc_pos_in += sc_bi_pos_in
@@ -354,7 +357,7 @@ if __name__ == '__main__':
   # th=IS.findThreshold()
   IS.load('mix_doc.pickle')
   # IS.load('software_mix_doc.pickle')
-  IS.select(threshold = -15, is_update=True, retrieve_per_iteration=None, n_iteration=5)
+  IS.select(threshold = -20, is_update=True, retrieve_per_iteration=None, n_iteration=5)
   # IS.select(1.5)
   # label = range(2000)
   label = range(450000,500000)
