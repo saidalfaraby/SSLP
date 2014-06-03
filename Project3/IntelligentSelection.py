@@ -40,7 +40,9 @@ class IntelligentSelection(object):
     if len(termpos)==0 or MIX.N_Term<-99999:
       for i, score in enumerate(self.type_score):
         score_per_each[score] = 0
-      return -99999, score_per_each if find_threshold else 99999, score_per_each
+      if find_threshold:
+        return -99999, score_per_each
+      return 99999, score_per_each
 
     if self.is_unigram:
       for t,p in termpos:
@@ -170,6 +172,7 @@ class IntelligentSelection(object):
         random.shuffle(self.Mix_Docs)
         print 'iteration : ', it
         for mix in self.Mix_Docs:
+          print self.entropy_score(mix['termpos'])
           mix['score'], mix['score_each'] = self.entropy_score(mix['termpos'])
           if mix['score'] < threshold:
             self.Selected_Docs.append(mix['docID'])
