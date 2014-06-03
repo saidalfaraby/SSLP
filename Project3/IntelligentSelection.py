@@ -16,24 +16,27 @@ class IntelligentSelection(object):
     self.In_Model = In_Model
     self.Mix_Model = Mix_Model
     self.Mix_Docs = [] #store object of docID and pos tagged sentences, and score
+    self.Mix_Docs_Translation = []
     self.Selected_Docs = []
     self.scores = []
     self.dual_score = True
     self.include_pos = False
     self.is_unigram = True
     self.is_bigram = True
+    self.is_translation = False
     self.type_score = ['un_term_in', 'bi_term_in', 'un_pos_in', 'bi_pos_in', 'un_tpos_in', 'bi_tpos_in',
                   'un_term_mix', 'bi_term_mix', 'un_pos_mix', 'bi_pos_mix', 'un_tpos_mix', 'bi_tpos_mix']
 
 
-  def entropy_score(self,termpos, find_threshold=False):
+  def entropy_score(self,termpos, tr_termpos=[], find_threshold=False):
   #score based on difference of cross entropy
   #sentences have been tokenized and pos tagged
     IN = self.In_Model
     MIX = self.Mix_Model
     score_per_each = {}
     sc_term_in, sc_term_mix, sc_pos_in,\
-     sc_pos_mix, sc_pos_in_only, sc_pos_mix_only = (0,0,0,0,0,0)
+     sc_pos_mix, sc_pos_in_only, sc_pos_mix_only, \
+     sc_tr_term_in, sc_tr_term_mix = (0,0,0,0,0,0,0,0)
     sc_bi_term_in, sc_bi_pos_in, sc_bi_term_mix, \
       sc_bi_pos_mix, sc_bi_pos_in_only, sc_bi_pos_mix_only = (0,0,0,0,0,0)
 
@@ -53,6 +56,13 @@ class IntelligentSelection(object):
           sc_term_mix += -np.log(MIX.Term_Freq[t]/MIX.N_Term)
           sc_pos_mix+= -np.log(MIX.TPOS_Freq[(t,p)]/MIX.N_Term)
           sc_pos_mix_only += -np.log(MIX.POS_Freq[p]/MIX.N_Term)
+
+    if self.is_translation:
+      for t,p in tr_termpos:
+        sc_tr_term_in += -np.log(IN.Tr_Term_Freq[t]/IN.Tr_N_Term)
+        if MIX!=None and self.dual_score:
+          sc_tr_term_mix += -np.log(MIX.Tr_Term_Freq[t]/MIX.Tr_N_Term)  
+
 
     if self.is_bigram:
       # bigrams
@@ -87,11 +97,11 @@ class IntelligentSelection(object):
       sc_pos_mix_only += sc_bi_pos_mix_only
     if self.include_pos and self.include_pos_only:
       # return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
-      return (sc_term_in+sc_pos_in+sc_pos_in_only)-(sc_term_mix+sc_pos_mix+sc_pos_mix_only), score_per_each
+      return (sc_term_in+sc_pos_in+sc_pos_in_only+sc_tr_term_in)-(sc_term_mix+sc_pos_mix+sc_pos_mix_only+sc_tr_term_mix), score_per_each
     elif self.include_pos:
-      return (sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix), score_per_each
+      return (sc_term_in+sc_pos_in+sc_tr_term_in)-(sc_term_mix+sc_pos_mix+sc_tr_term_mix), score_per_each
     # return (sc_term_in-sc_term_mix)/len(termpos)
-    return sc_term_in-sc_term_mix, score_per_each
+    return (sc_term_in+sc_tr_term_in)-(sc_term_mix+sc_tr_term_mix), score_per_each
 
   def ratio_score(self,termpos, find_threshold=False, is_bigram = True):
   #score based on difference of cross entropy
@@ -157,12 +167,25 @@ class IntelligentSelection(object):
     label = range(450000,500000)
     scoring_function = self.entropy_score
     if threshold!=None and not is_update:
-      for mix in self.Mix_Docs:
-        mix['score'] = scoring_function(mix['termpos'])
-        if mix['docID']<450000 and mix['score']<99999 and mix['score']>-99999:
-          self.scores.append(mix['score'])
-        if mix['score'] < threshold:
-          self.Selected_Docs.append(mix['docID'])
+      if not self.is_translation :
+        for mix in self.Mix_Docs:
+          mix['score'], smt = scoring_function(mix['termpos'])
+          if mix['docID']<450000 and mix['score']<99999 and mix['score']>-99999:
+            self.scores.append(mix['score'])
+          if mix['score'] < threshold:
+            self.Selected_Docs.append(mix['docID'])
+      else :
+        for i in range(len(self.Mix_Docs)):
+          mix = self.Mix_Docs[i]
+          try :
+            tr = self.Mix_Docs_Translation[i]
+          except :
+            print i
+          mix['score'], smt = scoring_function(mix['termpos'],tr['termpos'])
+          if mix['docID']<450000 and mix['score']<99999 and mix['score']>-99999:
+            self.scores.append(mix['score'])
+          if mix['score'] < threshold:
+            self.Selected_Docs.append(mix['docID'])
     if threshold !=None and is_update:
       it = 0
       lr = 1
@@ -269,18 +292,30 @@ class IntelligentSelection(object):
     self.Mix_Docs = []
     f = open(path)
     docId = 0
-    for sentence in f.readlines():
-      sentence = nltk.pos_tag(nltk.word_tokenize(sentence))
-      s = []
-      for token,pos in sentence:
-        try :
-          new_token = regex.sub(u'', token).decode('utf-8')
-          if not new_token == u'' and not new_token in stopwords.words('english'):
-            s.append((new_token,pos))
-        except :
-          pass
-      self.Mix_Docs.append({'docID':docId, 'termpos':s, 'score':-999999})
-      docId +=1
+    if not self.is_translation :
+      for sentence in f.readlines():
+        sentence = nltk.pos_tag(nltk.word_tokenize(sentence))
+        s = []
+        for token,pos in sentence:
+          try :
+            new_token = regex.sub(u'', token).decode('utf-8')
+            if not new_token == u'' and not new_token in stopwords.words('english'):
+              s.append((new_token,pos))
+          except :
+            pass
+        self.Mix_Docs.append({'docID':docId, 'termpos':s, 'score':-999999})
+        docId +=1
+    else :
+      spanish_tagger = pickle.load(open('bitag_spanish.pickle','rb'))
+      for sentence in f.readlines():
+        term_pos = spanish_tagger.tag(nltk.word_tokenize(sentence))
+        s = []
+        for term,pos in term_pos :
+          if not term == '' and not term in stopwords.words('spanish'):
+            s.append((term,pos))
+        self.Mix_Docs_Translation.append({'docID':docId, 'termpos':s, 'score':-999999})
+        docId +=1
+
     self.log('parsed..')
 
   def stats(self):
@@ -292,18 +327,30 @@ class IntelligentSelection(object):
     self.log('median '+str(np.median(n)))
     self.log('std '+str(np.std(n)))
 
-  def save(self, path='mix_doc.pickle'):
-    self.log('save data to '+path)
-    with open(path, 'wb') as handle:
-      pickle.dump(self.Mix_Docs, handle)
+  def save(self, path=None, translation_path=None):
+    if path != None :
+      self.log('save mix doc data to '+path)
+      with open(path, 'wb') as handle:
+        pickle.dump(self.Mix_Docs, handle)
+    if translation_path!=None:
+      self.log('save trans mix doc data to '+path)
+      with open(translation_path, 'wb') as handle:
+        pickle.dump(self.Mix_Docs_Translation, handle)
     self.log('saved..')
 
-  def load(self, path='mix_doc.pickle'):
-    self.log('loading data '+path)
-    with open(path, 'rb') as handle:
-      self.Mix_Docs = pickle.load(handle)
+  def load(self, path=None, translation_path=None):
+    if path!=None:
+      self.log('loading data '+path)
+      with open(path, 'rb') as handle:
+        self.Mix_Docs = pickle.load(handle)
+      self.log('number of docs loaded : '+str(len(self.Mix_Docs)))
+    if translation_path !=None:
+      self.log('loading translation data '+path)
+      with open(translation_path, 'rb') as handle:
+        self.Mix_Docs_Translation = pickle.load(handle)
+        self.log('number of translation docs loaded : '+str(len(self.Mix_Docs_Translation)))
     self.log('loaded..')
-    self.log('number of docs loaded : '+str(len(self.Mix_Docs)))
+
 
   def log(self,string):
     f = open('log_IS.txt', 'a+')
@@ -312,12 +359,14 @@ class IntelligentSelection(object):
     f.close()
 
 if __name__ == '__main__':
-  in_model_file = 'legal_in_model_noprune.pickle'
-  mix_model_file = 'legal_mix_model_noprune.pickle'
+  in_model_file = 'legal_in_model_noprune_with_translation.pickle'
+  mix_model_file = 'legal_mix_model_noprune_with_translation.pickle'
   In_Model = Features()
   Mix_Model = Features()
   In_Model.load(in_model_file)
   Mix_Model.load(mix_model_file)
+  print In_Model.N_Term
+  print In_Model.Tr_N_Term
   In_Model.set_lambda(0.1)
   Mix_Model.set_lambda(0.1)
   IS = IntelligentSelection(In_Model,Mix_Model)
@@ -325,10 +374,11 @@ if __name__ == '__main__':
   IS.log('in domain LM file : '+in_model_file)
   IS.log('mix domain LM file : '+mix_model_file)
   IS.include_pos = True
-  IS.include_pos_only = True
+  IS.include_pos_only = False
   IS.dual_score = True
   IS.is_unigram = True
-  IS.is_bigram = True
+  IS.is_bigram = False
+  IS.is_translation = True
 
   # IS.log('run with threshold = '+str(th))
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
@@ -351,14 +401,14 @@ if __name__ == '__main__':
 
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
   # th = IS.findThreshold()
-  # IS.parse_mix_doc('project3_data_selection/out.mixed.legal.en')
-  # IS.save('legal_dev_doc.pickle')
+  IS.parse_mix_doc('project3_data_selection/out.mixed.legal.es')
+  IS.save(translation_path='mix_doc_translation.pickle')
 
   # th=IS.findThreshold()
-  IS.load('mix_doc.pickle')
+  IS.load('mix_doc.pickle','mix_doc_translation.pickle')
   # IS.load('software_mix_doc.pickle')
-  IS.select(threshold = -20, is_update=True, retrieve_per_iteration=None, n_iteration=5)
-  # IS.select(1.5)
+  # IS.select(threshold = -20, is_update=True, retrieve_per_iteration=None, n_iteration=5)
+  IS.select(-1.0)
   # label = range(2000)
   label = range(450000,500000)
   m = IS.measure(label)

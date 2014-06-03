@@ -284,7 +284,7 @@ class Features(object):
 
 if __name__ == '__main__':
     F = Features()
-    # F.load('legal_in_model_noprune.pickle')
+    F.load('legal_in_model_noprune.pickle')
     b1= len(F.Term_Freq)
     # print F.Term_Freq.keys()
     b2= len(F.POS_Freq)
