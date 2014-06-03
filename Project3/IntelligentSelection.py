@@ -22,28 +22,36 @@ class IntelligentSelection(object):
     self.include_pos = False
     self.is_unigram = True
     self.is_bigram = True
+    self.type_score = ['un_term_in', 'bi_term_in', 'un_pos_in', 'bi_pos_in', 'un_tpos_in', 'bi_tpos_in',
+                  'un_term_mix', 'bi_term_mix', 'un_pos_mix', 'bi_pos_mix', 'un_tpos_mix', 'bi_tpos_mix']
 
 
   def entropy_score(self,termpos, find_threshold=False):
   #score based on difference of cross entropy
   #sentences have been tokenized and pos tagged
-    
     IN = self.In_Model
     MIX = self.Mix_Model
-    sc_term_in, sc_term_mix, sc_pos_in, sc_pos_mix = (0,0,0,0)
-    sc_bi_term_in, sc_bi_pos_in, sc_bi_term_mix, sc_bi_pos_mix = (0,0,0,0)
+    score_per_each = {}
+    sc_term_in, sc_term_mix, sc_pos_in,\
+     sc_pos_mix, sc_pos_in_only, sc_pos_mix_only = (0,0,0,0,0,0)
+    sc_bi_term_in, sc_bi_pos_in, sc_bi_term_mix, \
+      sc_bi_pos_mix, sc_bi_pos_in_only, sc_bi_pos_mix_only = (0,0,0,0,0,0)
 
     if len(termpos)==0 or MIX.N_Term<-99999:
-      return -99999 if find_threshold else 99999
+      for i, score in enumerate(self.type_score):
+        score_per_each[score] = 0
+      return -99999, score_per_each if find_threshold else 99999, score_per_each
 
     if self.is_unigram:
       for t,p in termpos:
-        sc_term_in += -np.log(IN.Term_Freq[t]/IN.N_Term) 
-        sc_pos_in+= -np.log(IN.TPOS_Freq[t,p]/IN.N_Term)
+        sc_term_in += -np.log(IN.Term_Freq[t]/IN.N_Term)
+        sc_pos_in+= -np.log(IN.TPOS_Freq[(t,p)]/IN.N_Term)
+        sc_pos_in_only += -np.log(IN.POS_Freq[p]/IN.N_Term)
         if MIX!=None and self.dual_score:
-          sc_term_mix += -np.log(MIX.Term_Freq[t]/MIX.N_Term) 
-          sc_pos_mix+= -np.log(MIX.TPOS_Freq[t,p]/MIX.N_Term)
-    
+          sc_term_mix += -np.log(MIX.Term_Freq[t]/MIX.N_Term)
+          sc_pos_mix+= -np.log(MIX.TPOS_Freq[(t,p)]/MIX.N_Term)
+          sc_pos_mix_only += -np.log(MIX.POS_Freq[p]/MIX.N_Term)
+
     if self.is_bigram:
       # bigrams
       b_words, b_pos = self.In_Model.to_bigram(termpos)
@@ -53,26 +61,37 @@ class IntelligentSelection(object):
       # b_pos = nltk.bigrams(pos_tags)
       if len(b_words) > 0:
         for t, p in zip(b_words, b_pos):
-          sc_bi_term_in += -np.log(IN.BTerm_Freq[t]/IN.BN_Term) 
-          sc_bi_pos_in+= -np.log(IN.BTPOS_Freq[t,p]/IN.BN_Term)
+          sc_bi_term_in += -np.log(IN.BTerm_Freq[t]/IN.BN_Term)
+          sc_bi_pos_in += -np.log(IN.BTPOS_Freq[(t, p)]/IN.BN_Term)
+          sc_bi_pos_in_only += -np.log(IN.BPOS_Freq[p]/IN.BN_Term)
           if MIX!=None and self.dual_score:
-            sc_bi_term_mix += -np.log(MIX.BTerm_Freq[t]/MIX.BN_Term) 
-            sc_bi_pos_mix+= -np.log(MIX.BTPOS_Freq[t,p]/MIX.BN_Term)
+            sc_bi_term_mix += -np.log(MIX.BTerm_Freq[t]/MIX.BN_Term)
+            sc_bi_pos_mix+= -np.log(MIX.BTPOS_Freq[(t,p)]/MIX.BN_Term)
+            sc_bi_pos_mix_only += -np.log(MIX.BPOS_Freq[p]/MIX.BN_Term)
+
+      final_scores = [sc_term_in, sc_bi_term_in, sc_pos_in_only, sc_bi_pos_in_only, sc_pos_in, sc_bi_pos_in,
+                    sc_term_mix, sc_bi_term_mix, sc_pos_mix_only, sc_bi_pos_mix_only, sc_pos_mix, sc_bi_pos_mix]
+      for i, score in enumerate(self.type_score):
+        score_per_each[score] = final_scores[i]
 
       sc_term_in += sc_bi_term_in
       sc_pos_in += sc_bi_pos_in
+      sc_pos_in_only += sc_bi_pos_in_only
       sc_term_mix += sc_bi_term_mix
       sc_pos_mix += sc_bi_pos_mix
-    if self.include_pos :
+      sc_pos_mix_only += sc_bi_pos_mix_only
+    if self.include_pos and self.include_pos_only:
       # return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
-      return (sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix)
+      return (sc_term_in+sc_pos_in+sc_pos_in_only)-(sc_term_mix+sc_pos_mix+sc_pos_mix_only), score_per_each
+    elif self.include_pos:
+      return (sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix), score_per_each
     # return (sc_term_in-sc_term_mix)/len(termpos)
-    return sc_term_in-sc_term_mix
+    return sc_term_in-sc_term_mix, score_per_each
 
   def ratio_score(self,termpos, find_threshold=False, is_bigram = True):
   #score based on difference of cross entropy
   #sentences have been tokenized and pos tagged
-    
+
     IN = self.In_Model
     MIX = self.Mix_Model
     sc_term_in, sc_term_mix, sc_pos_in, sc_pos_mix = (1,1,1,1)
@@ -83,17 +102,17 @@ class IntelligentSelection(object):
 
     if self.is_unigram:
       for t,p in termpos:
-        sc_term_in *= IN.Term_Freq[t]/IN.N_Term 
+        sc_term_in *= IN.Term_Freq[t]/IN.N_Term
         sc_pos_in*= IN.TPOS_Freq[t,p]/IN.N_Term
         if MIX!=None and self.dual_score:
           sc_term_mix *= MIX.Term_Freq[t]/MIX.N_Term
           sc_pos_mix*= MIX.TPOS_Freq[t,p]/MIX.N_Term
-    
+
     if self.is_bigram:
       b_words, b_pos = self.In_Model.to_bigram(termpos)
       if len(b_words) > 0:
         for b_w, b_p in zip(b_words, b_pos):
-          sc_bi_term_in *= IN.BTerm_Freq[t]/IN.BN_Term 
+          sc_bi_term_in *= IN.BTerm_Freq[t]/IN.BN_Term
           sc_bi_pos_in*= IN.BTPOS_Freq[t,p]/IN.BN_Term
           if MIX!=None and self.dual_score:
             sc_bi_term_mix *= MIX.BTerm_Freq[t]/MIX.BN_Term
@@ -124,6 +143,7 @@ class IntelligentSelection(object):
     self.log('selecting documents with threshold '+str(threshold)+' ...')
     self.log('dual score : '+str(self.dual_score))
     self.log('include pos : '+str(self.include_pos))
+    self.log('include pos only:' + str(self.include_pos_only))
     self.log('unigram : '+str(self.is_unigram))
     self.log('bigram : '+str(self.is_bigram))
     self.log('is update : '+str(is_update))
@@ -143,40 +163,43 @@ class IntelligentSelection(object):
       lr = 1
       decay = 0.8
       selected_documents = []
-      unselected_documents = []
-      inc_threshold = 0
+      total_docs = []
       for i in range(n_iteration):
+        unselected_docs = []
         it+=1
-        self.log('Current threshold : '+str(threshold))
         random.shuffle(self.Mix_Docs)
-        print 'iteration : ',it
+        print 'iteration : ', it
         for mix in self.Mix_Docs:
-          mix['score'] = self.entropy_score(mix['termpos'])
+          mix['score'], mix['score_each'] = self.entropy_score(mix['termpos'])
           if mix['score'] < threshold:
             self.Selected_Docs.append(mix['docID'])
             selected_documents.append(mix)
           else:
-            unselected_documents.append(mix)
+            unselected_docs.append(mix)
 
-        self.Mix_Docs = unselected_documents
-        unselected_documents = []
-            
         for mix in selected_documents:
           #update unigram model
           for token, pos in mix['termpos']:
-            self.In_Model.update_count2(token,pos, lr*(1+threshold-mix['score']))
-            self.Mix_Model.update_count2(token, pos, -lr*(1+threshold-mix['score']))
+            # self.In_Model.update_count2(token,pos, lr*(1 + threshold-mix['score']))
+            # self.Mix_Model.update_count2(token, pos, -lr * np.exp(threshold-mix['score']))
+            self.In_Model.update_count3(token, pos, mix['score_each'], threshold)
+            # self.Mix_Model.update_count3(token, pos, mix['score_each'])
             #update bigram model
           b_words, b_pos = self.In_Model.to_bigram(mix['termpos'])
           for b_w, b_p in zip(b_words, b_pos):
-            self.In_Model.update_count2(b_w, b_p, lr*(1+threshold-mix['score']), bigrams=1)
-            self.Mix_Model.update_count2(b_w, b_p, -lr*(1+threshold-mix['score']), bigrams=1)
+            # self.In_Model.update_count2(b_w, b_p, lr*( 1 + threshold-mix['score']), bigrams=1)
+            # self.Mix_Model.update_count2(b_w, b_p, -lr * np.exp(threshold-mix['score']), bigrams=1)
+            self.In_Model.update_count3(b_w, b_p, mix['score_each'], threshold, bigrams=1)
         self.measure(label)
-        # if it!=n_iteration:
-          # self.Selected_Docs = []
+        self.Selected_Docs = []
+        total_docs += selected_documents
+        if len(selected_documents) == 0:
+          print 'Converged'
+          break
         selected_documents = []
-        threshold+=inc_threshold
-        lr*=decay
+        lr *= decay
+        self.Mix_Docs = unselected_docs
+      self.Selected_Docs = [mix['docID'] for mix in total_docs]
 
     elif is_update and retrieve_per_iteration!=None:
       it = 0
@@ -187,7 +210,7 @@ class IntelligentSelection(object):
           mix['score'] = self.entropy_score(mix['termpos'])
           # if mix['docID']<450000 and mix['score']<99999 and mix['score']>-99999:
             # self.scores.append(mix['score'])
-        sorted_Mix_Docs = sorted(self.Mix_Docs, key=lambda k: k['score']) 
+        sorted_Mix_Docs = sorted(self.Mix_Docs, key=lambda k: k['score'])
         # self.Selected_Docs.extend(sorted_Mix_Docs[0:retrieve_per_iteration])
         for j in range(retrieve_per_iteration):
           doc = sorted_Mix_Docs[j]
@@ -211,7 +234,7 @@ class IntelligentSelection(object):
     self.log('intersection : '+str(len(intersection)))
     try :
       return {'precision': len(intersection)/len(self.Selected_Docs), 'recall':len(intersection)/len(label)}
-    except : 
+    except :
       return {'precision': 0, 'recall':len(intersection)/len(label)}
 
   def findThreshold(self):
@@ -243,7 +266,7 @@ class IntelligentSelection(object):
     for sentence in f.readlines():
       sentence = nltk.pos_tag(nltk.word_tokenize(sentence))
       s = []
-      for token,pos in sentence: 
+      for token,pos in sentence:
         try :
           new_token = regex.sub(u'', token).decode('utf-8')
           if not new_token == u'' and not new_token in stopwords.words('english'):
@@ -295,11 +318,12 @@ if __name__ == '__main__':
   IS.log('\n\n---------------------------')
   IS.log('in domain LM file : '+in_model_file)
   IS.log('mix domain LM file : '+mix_model_file)
-  IS.include_pos = False
+  IS.include_pos = True
+  IS.include_pos_only = True
   IS.dual_score = True
   IS.is_unigram = True
-  IS.is_bigram = False
-  
+  IS.is_bigram = True
+
   # IS.log('run with threshold = '+str(th))
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
   # th = IS.findThreshold()
@@ -317,7 +341,7 @@ if __name__ == '__main__':
 
   # Mix_Model.save('mix_model.pickle')
   # Mix_Model.load('mix_model.pickle')
-  
+
 
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
   # th = IS.findThreshold()
@@ -328,7 +352,7 @@ if __name__ == '__main__':
   IS.load('mix_doc.pickle')
   # IS.load('software_mix_doc.pickle')
   IS.select(threshold = -10, is_update=True, retrieve_per_iteration=None, n_iteration=5)
-  # IS.select(0.0)
+  # IS.select(1.5)
   # label = range(2000)
   label = range(450000,500000)
   m = IS.measure(label)
@@ -337,9 +361,3 @@ if __name__ == '__main__':
 
   # IS.stats()
   IS.log('\n\n')
-
-
-
-
-
-    
