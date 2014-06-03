@@ -17,7 +17,7 @@ class Features(object):
     self.TPOS_Freq = defaultdict(int)  # term, postag frequency. Key = (term,POSTag), Val = Frequency
     self.Trans_Freq = defaultdict(int)  # translation frequency. Key = (E,F), Val = frequency
     self.N_Term = 0
-    
+
     self.BTerm_Freq = defaultdict(int)  # bigram frequency. Key = (term, term), Val = Frequency
     self.BPOS_Freq = defaultdict(int)  # bigram POS-tags. key = (POSTag, POSTag), Val = Frequency
     self.BTPOS_Freq = defaultdict(int)
@@ -26,7 +26,7 @@ class Features(object):
   def parse_doc(self, path, nrandom_sample=None):
     regex = re.compile('[%s]' % re.escape(string.punctuation))
     i = 0
-    
+
     f = open(path)
     docs = f.readlines()
     if nrandom_sample!=None:
@@ -121,15 +121,35 @@ class Features(object):
 
   def update_count2(self, t, p, val, bigrams=0):
     if bigrams == 0:
-      self.Term_Freq[t] += val
-      self.TPOS_Freq[(t, p)] += val
-      self.N_Term += val
-      self.POS_Freq[p] += val
+      if self.Term_Freq[t] + val >= 0:
+        self.Term_Freq[t] += val
+      if self.TPOS_Freq[(t, p)] + val >= 0:
+        self.TPOS_Freq[(t, p)] += val
+      if self.N_Term + val >= 0:
+        self.N_Term += val
+      if self.POS_Freq[p] + val >= 0:
+        self.POS_Freq[p] += val
     elif bigrams == 1:
-      self.BN_Term += 1
-      self.BTerm_Freq[t] += 1
-      self.BPOS_Freq[p] += 1
-      self.BTPOS_Freq[(t, p)] += 1
+      if self.BN_Term + val >= 0:
+        self.BN_Term += val
+      if self.BTerm_Freq[t] + val >= 0:
+        self.BTerm_Freq[t] += val
+      if self.BPOS_Freq[p] + val >= 0:
+        self.BPOS_Freq[p] += val
+      if self.BTPOS_Freq[(t, p)] + val >= 0:
+        self.BTPOS_Freq[(t, p)] += val
+
+  def update_count3(self, t, p, vals, threshold, bigrams=0, type_d='in'):
+    if bigrams == 0:
+      self.Term_Freq[t] += vals['un_term_'+type_d] + threshold
+      self.TPOS_Freq[(t, p)] += vals['un_tpos_'+type_d] + threshold
+      self.POS_Freq[p] += vals['un_pos_'+type_d] - threshold
+      self.N_Term += np.median([vals['un_term_'+type_d] + threshold,  vals['un_tpos_'+type_d]+ threshold, vals['un_pos_'+type_d]+ threshold])
+    elif bigrams == 1:
+      self.BN_Term += np.median([vals['bi_term_'+type_d]+ threshold, vals['bi_pos_'+type_d]+ threshold, vals['bi_tpos_'+type_d]+ threshold])
+      self.BTerm_Freq[t] += vals['bi_term_'+type_d]+ threshold
+      self.BPOS_Freq[p] += vals['bi_pos_'+type_d]+ threshold
+      self.BTPOS_Freq[(t, p)] += vals['bi_tpos_'+type_d]+ threshold
 
   def construct_features(self, sentences, use_smoothing=True):
     print 'creating features...'
