@@ -172,7 +172,7 @@ class IntelligentSelection(object):
         random.shuffle(self.Mix_Docs)
         print 'iteration : ', it
         for mix in self.Mix_Docs:
-          print self.entropy_score(mix['termpos'])
+          #print self.entropy_score(mix['termpos'])
           mix['score'], mix['score_each'] = self.entropy_score(mix['termpos'])
           if mix['score'] < threshold:
             self.Selected_Docs.append(mix['docID'])
@@ -354,7 +354,7 @@ if __name__ == '__main__':
   # th=IS.findThreshold()
   IS.load('mix_doc.pickle')
   # IS.load('software_mix_doc.pickle')
-  IS.select(threshold = -10, is_update=True, retrieve_per_iteration=None, n_iteration=5)
+  IS.select(threshold = -15, is_update=True, retrieve_per_iteration=None, n_iteration=5)
   # IS.select(1.5)
   # label = range(2000)
   label = range(450000,500000)
