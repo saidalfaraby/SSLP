@@ -15,15 +15,22 @@ class Features(object):
     self.Term_Freq = defaultdict(int)  # term frequency. Key = term, Val = frequency
     self.POS_Freq = defaultdict(int)  # postag frequency. Key = POSTag, Val = Frequency
     self.TPOS_Freq = defaultdict(int)  # term, postag frequency. Key = (term,POSTag), Val = Frequency
-    self.Trans_Freq = defaultdict(int)  # translation frequency. Key = (E,F), Val = frequency
     self.N_Term = 0
+
+    self.Tr_Term_Freq = defaultdict(int) #for translation language model
+    self.Tr_TPOS_Freq = defaultdict(int) #for translation language model
+    self.Tr_N_Term = 0
+
+    
     
     self.BTerm_Freq = defaultdict(int)  # bigram frequency. Key = (term, term), Val = Frequency
     self.BPOS_Freq = defaultdict(int)  # bigram POS-tags. key = (POSTag, POSTag), Val = Frequency
     self.BTPOS_Freq = defaultdict(int)
     self.BN_Term = 0
 
-  def parse_doc(self, path, nrandom_sample=None):
+    self.Trans_Freq = defaultdict(int)  # translation frequency. Key = (E,F), Val = frequency
+
+  def parse_doc(self, path, nrandom_sample=None, is_translation=False):
     regex = re.compile('[%s]' % re.escape(string.punctuation))
     i = 0
     
@@ -36,32 +43,33 @@ class Features(object):
       docs = newdocs
     #print len(docs)
     #print docs
-    for sentence in docs:
-      sentence = nltk.pos_tag(nltk.word_tokenize(sentence))
-      i += 1
-      print i
-      #remove punctuation
-      for token, pos in sentence:
-        try:
-          new_token = regex.sub(u'', token).decode('utf-8')
-          if not new_token == u'' and not new_token in stopwords.words('english'):
-            self.update_count(new_token, pos)
-        except:
-          pass
+    if not is_translation:
+      for sentence in docs:
+        sentence = nltk.pos_tag(nltk.word_tokenize(sentence))
+        i += 1
+        print i
+        #remove punctuation
+        for token, pos in sentence:
+          try:
+            new_token = regex.sub(u'', token).decode('utf-8')
+            if not new_token == u'' and not new_token in stopwords.words('english'):
+              self.update_count(new_token, pos)
+          except:
+            pass
 
-      # estimate statistics for bigrams
-      # words = [elem[0] for elem in sentence]
-      # pos_tags = [elem[1] for elem in sentence]
+        b_words, b_pos = self.to_bigram(sentence)
 
-      # b_words = nltk.bigrams(words)
-      # b_pos = nltk.bigrams(pos_tags)
-      b_words, b_pos = self.to_bigram(sentence)
-
-      for b_w, b_p in zip(b_words, b_pos):
-        self.update_count(b_w, b_p, bigrams=1)
-
+        for b_w, b_p in zip(b_words, b_pos):
+          self.update_count(b_w, b_p, bigrams=1)
+    else :
+      spanish_tagger = pickle.load(open('spanish_tagger.pkl','rb'))
+      for sentence in docs:
+        term_pos = spanish_tagger.tag(nltk.word_tokenize(sentence))
+        for term,pos in term_pos :
+          if not term == '' and not term in stopwords.words('spanish'):
+            self.update_count(term, pos, is_translation=True)
     self.set_lambda(1)
-    self.prune()
+    # self.prune()
 
   def to_bigram(self, termpos):
     words = [elem[0] for elem in termpos]
@@ -77,6 +85,8 @@ class Features(object):
     self.TPOS_Freq.default_factory = lambda: v
     self.Trans_Freq.default_factory = lambda: v
     self.POS_Freq.default_factory = lambda: v
+    self.Tr_Term_Freq.default_factory = lambda : v
+    self.Tr_TPOS_Freq.default_factory = lambda : v
     # bigram
     self.BTerm_Freq.default_factory = lambda: v
     self.BPOS_Freq.default_factory = lambda: v
@@ -89,10 +99,6 @@ class Features(object):
       if dictionary[k] <= 1:
         del dictionary[k]
         n_removed +=1
-        #if bigram == 0:
-        #  self.N_Term -= 1
-        #elif bigram == 1:
-        #  self.BN_Term -= 1
     return n_removed
 
   def prune(self):
@@ -107,29 +113,48 @@ class Features(object):
     bi_removed = self.prune_dict(self.BTPOS_Freq, bigram=1)
     self.BN_Term -= bi_removed
 
-  def update_count(self, t, p, bigrams=0):
-    if bigrams == 0:
-      self.Term_Freq[t] += 1
-      self.TPOS_Freq[(t, p)] += 1
-      self.N_Term += 1
-      self.POS_Freq[p] += 1
-    elif bigrams == 1:
-      self.BN_Term += 1
-      self.BTerm_Freq[t] += 1
-      self.BPOS_Freq[p] += 1
-      self.BTPOS_Freq[(t, p)] += 1
+  def update_count(self, t, p, bigrams=0, is_translation=False):
+    if not is_translation:
+      if bigrams == 0:
+        self.Term_Freq[t] += 1
+        self.TPOS_Freq[(t, p)] += 1
+        self.N_Term += 1
+        self.POS_Freq[p] += 1
+      elif bigrams == 1:
+        self.BN_Term += 1
+        self.BTerm_Freq[t] += 1
+        self.BPOS_Freq[p] += 1
+        self.BTPOS_Freq[(t, p)] += 1
+    else :
+      if bigrams == 0:
+        self.Tr_Term_Freq[t] += 1
+        self.Tr_TPOS_Freq[(t, p)] += 1
+        self.Tr_N_Term += 1
 
-  def update_count2(self, t, p, val, bigrams=0):
-    if bigrams == 0:
-      self.Term_Freq[t] += val
-      self.TPOS_Freq[(t, p)] += val
-      self.N_Term += val
-      self.POS_Freq[p] += val
-    elif bigrams == 1:
-      self.BN_Term += 1
-      self.BTerm_Freq[t] += 1
-      self.BPOS_Freq[p] += 1
-      self.BTPOS_Freq[(t, p)] += 1
+  def update_count2(self, t, p, val, bigrams=0, is_translation=False):
+    if not is_translation:
+      if bigrams == 0:
+        if self.Term_Freq[t] + val >= 0:
+          self.Term_Freq[t] += val
+        if self.TPOS_Freq[(t, p)] + val >= 0:
+          self.TPOS_Freq[(t, p)] += val
+        if self.N_Term + val >= 0:
+          self.N_Term += val
+        if self.POS_Freq[p] + val >= 0:
+          self.POS_Freq[p] += val
+      elif bigrams == 1:
+        self.BN_Term += 1
+        self.BTerm_Freq[t] += 1
+        self.BPOS_Freq[p] += 1
+        self.BTPOS_Freq[(t, p)] += 1
+    else :
+      if bigrams == 0:
+        if self.Tr_Term_Freq[t] + val >= 0:
+          self.Tr_Term_Freq[t] += val
+        if self.Tr_TPOS_Freq[(t, p)] + val >= 0:
+          self.Tr_TPOS_Freq[(t, p)] += val
+        if self.Tr_N_Term + val >= 0:
+          self.Tr_N_Term += val
 
   def construct_features(self, sentences, use_smoothing=True):
     print 'creating features...'

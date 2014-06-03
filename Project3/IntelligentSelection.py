@@ -143,9 +143,11 @@ class IntelligentSelection(object):
       lr = 1
       decay = 0.8
       selected_documents = []
+      unselected_documents = []
+      inc_threshold = 0
       for i in range(n_iteration):
         it+=1
-        lr*=decay
+        self.log('Current threshold : '+str(threshold))
         random.shuffle(self.Mix_Docs)
         print 'iteration : ',it
         for mix in self.Mix_Docs:
@@ -153,21 +155,28 @@ class IntelligentSelection(object):
           if mix['score'] < threshold:
             self.Selected_Docs.append(mix['docID'])
             selected_documents.append(mix)
+          else:
+            unselected_documents.append(mix)
+
+        self.Mix_Docs = unselected_documents
+        unselected_documents = []
             
         for mix in selected_documents:
           #update unigram model
           for token, pos in mix['termpos']:
             self.In_Model.update_count2(token,pos, lr*(1+threshold-mix['score']))
-              # self.Mix_Model.update_count2(token, pos, -(1+np.exp(threshold-mix['score'])))
+            self.Mix_Model.update_count2(token, pos, -lr*(1+threshold-mix['score']))
             #update bigram model
           b_words, b_pos = self.In_Model.to_bigram(mix['termpos'])
           for b_w, b_p in zip(b_words, b_pos):
             self.In_Model.update_count2(b_w, b_p, lr*(1+threshold-mix['score']), bigrams=1)
-              # self.Mix_Model.update_count2(b_w, b_p, -(1+np.exp(threshold-mix['score'])), bigrams=1)
+            self.Mix_Model.update_count2(b_w, b_p, -lr*(1+threshold-mix['score']), bigrams=1)
         self.measure(label)
-        if it!=n_iteration:
-          self.Selected_Docs = []
+        # if it!=n_iteration:
+          # self.Selected_Docs = []
         selected_documents = []
+        threshold+=inc_threshold
+        lr*=decay
 
     elif is_update and retrieve_per_iteration!=None:
       it = 0
@@ -319,7 +328,7 @@ if __name__ == '__main__':
   IS.load('mix_doc.pickle')
   # IS.load('software_mix_doc.pickle')
   IS.select(threshold = -10, is_update=True, retrieve_per_iteration=None, n_iteration=5)
-  # IS.select(1.5)
+  # IS.select(0.0)
   # label = range(2000)
   label = range(450000,500000)
   m = IS.measure(label)
