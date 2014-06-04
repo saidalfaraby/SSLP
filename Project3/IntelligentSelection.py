@@ -9,6 +9,7 @@ import re
 import random
 import string
 import bisect
+import sys
 
 class IntelligentSelection(object):
   """docstring for IntelligentSelection"""
@@ -24,6 +25,8 @@ class IntelligentSelection(object):
     self.is_unigram = True
     self.is_bigram = True
     self.is_translation = False
+    self.is_length_normalized = False
+    self.log_filename = 'log_IS.txt'
     self.type_score = ['un_term_in', 'bi_term_in', 'un_pos_in', 'bi_pos_in', 'un_tpos_in', 'bi_tpos_in',
                   'un_term_mix', 'bi_term_mix', 'un_pos_mix', 'bi_pos_mix', 'un_tpos_mix', 'bi_tpos_mix']
 
@@ -171,6 +174,7 @@ class IntelligentSelection(object):
     self.log('include pos only:' + str(self.include_pos_only))
     self.log('unigram : '+str(self.is_unigram))
     self.log('bigram : '+str(self.is_bigram))
+    self.log('is translation : '+str(self.is_translation))
     self.log('is update : '+str(is_update))
     self.log('retrieve per iteration : '+str(retrieve_per_iteration))
     self.log('number of iteration : '+str(n_iteration))
@@ -282,7 +286,7 @@ class IntelligentSelection(object):
     maxScore = -99999999
     allScore = []
     for mix in self.Mix_Docs:
-      score = self.entropy_score(mix['termpos'],True)
+      score, smt = self.entropy_score(mix['termpos'],find_threshold = True)
       if score > -99999:
         allScore.append(score)
       if score>maxScore:
@@ -364,14 +368,26 @@ class IntelligentSelection(object):
 
 
   def log(self,string):
-    f = open('log_IS.txt', 'a+')
+    f = open(self.log_filename, 'a+')
     print string
     f.write(string+'\n')
     f.close()
 
+  def write_doc(self, in_filename, out_filename):
+    self.log('writing selected docs from '+in_filename)
+    self.log('to '+out_filename)
+    fo = open(out_filename, 'wb')
+    fi = open(in_filename,'rb')
+    doc = fi.readlines()
+    for i in self.Selected_Docs:
+      fo.write(doc[i]+'\n')
+    fo.close()
+    fi.close()
+
 if __name__ == '__main__':
-  in_model_file = 'legal_in_model_noprune_with_translation.pickle'
-  mix_model_file = 'legal_mix_model_noprune_with_translation.pickle'
+  
+  in_model_file = 'legal_in_model_noprune.pickle'
+  mix_model_file = 'legal_mix_model_noprune.pickle'
   In_Model = Features()
   Mix_Model = Features()
   In_Model.load(in_model_file)
@@ -381,6 +397,9 @@ if __name__ == '__main__':
   In_Model.set_lambda(0.1)
   Mix_Model.set_lambda(0.1)
   IS = IntelligentSelection(In_Model,Mix_Model)
+  IS.log_filename = 'log1.txt'
+  if len(sys.argv) > 1:
+    IS.log_filename = sys.argv[1]
   IS.log('\n\n---------------------------')
   IS.log('in domain LM file : '+in_model_file)
   IS.log('mix domain LM file : '+mix_model_file)
@@ -391,6 +410,7 @@ if __name__ == '__main__':
   IS.is_bigram = False
   IS.is_translation = False
   IS.is_length_normalized = True
+  
 
   # IS.log('run with threshold = '+str(th))
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
@@ -417,7 +437,8 @@ if __name__ == '__main__':
   # IS.save(translation_path='mix_doc_translation.pickle')
 
   # th=IS.findThreshold()
-  IS.load('mix_doc.pickle','mix_doc_translation.pickle')
+  # IS.load('software_mix_doc.pickle','mix_doc_translation.pickle')
+  IS.load('software_mix_doc.pickle')
   # IS.load('software_mix_doc.pickle')
   # IS.select(threshold = -20, is_update=True, retrieve_per_iteration=None, n_iteration=5)
   IS.select(0.0)
@@ -426,6 +447,8 @@ if __name__ == '__main__':
   m = IS.measure(label)
   IS.log('precision '+str(m['precision']))
   IS.log('recall '+str(m['recall']))
-
+  IS.log('F1 '+str((2*m['precision']*m['recall'])/(m['precision']+m['recall'])))
+  IS.write_doc('project3_data_selection/out.mixed.legal.en', 'selected.en')
+  IS.write_doc('project3_data_selection/out.mixed.legal.es', 'selected.es')
   # IS.stats()
   IS.log('\n\n')
