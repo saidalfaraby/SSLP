@@ -222,7 +222,7 @@ def experiment_tfidfKLIEP(type_d, topics=100, method='tsvd'):
     kliep.fit_CV(t_out_sent, t_in_sent)
     predictions = - np.ones(len(uni_sentences_out))
     w = kliep.predict(t_out_sent).ravel()
-    predictions[np.where(w > 1.1)[0]] = 1   # w = p_te/p_tr
+    predictions[np.where(w > 1.)[0]] = 1   # w = p_te/p_tr
     print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', t_out_sent.shape[0]
     # sorted_ind = np.argsort(w, axis=None)[::-1]
     # predictions[sorted_ind[0:50000]] = 1
@@ -308,6 +308,33 @@ def experiment_LMKLIEP(which_d):
     print 'Support:', s,
 
 
+def experiment_LMSVM(which_d):
+    with open('feat_vec_out.'+which_d+'.en.pickle', 'rb') as handle:
+        out_d = pickle.load(handle)
+
+    with open('feat_vec_in.'+which_d+'.en.pickle', 'rb') as handle:
+        in_d = pickle.load(handle)
+
+    labels = - np.ones(out_d.shape[0])
+    labels[-50000:] = 1
+
+    print 'Fitting one class SVM'
+    clf = svm.OneClassSVM(kernel='linear')
+    clf.fit(in_d)
+
+    print 'Predicting for out domain'
+    predictions = clf.predict(out_d)
+    print 'total positive:', np.where(predictions == 1)[0].shape, ', out of:', out_d.shape[0]
+    # sorted_ind = np.argsort(w, axis=None)[::-1]
+    # predictions[sorted_ind[0:50000]] = 1
+
+    p, r, f, s = precision_recall_fscore_support(labels.astype(int), predictions.astype(int), pos_label=1, average='micro')
+    print 'Precision:', p,
+    print 'Recall:', r,
+    print 'F1:', f,
+    print 'Support:', s,
+
+
 def experimentLMKLIEP_per_feat(which_d):
     with open('feat_vec_out.'+which_d+'.en.pickle', 'rb') as handle:
         out_d = pickle.load(handle)
@@ -343,7 +370,7 @@ def experimentLMKLIEP_per_feat(which_d):
 
 if __name__ == '__main__':
     # average pooling seems to work better than max pooling
-    create_W2Vmodel('software', size_h=20)
+    # create_W2Vmodel('software', size_h=20)
     # create_W2Vmodel('legal', size_h=20)
 
     # experiment_w2vSVM('legal', type_pooling='average_p')  # P:0.62, R: 0.49, F1: 0.55
@@ -360,4 +387,8 @@ if __name__ == '__main__':
 
     # experimentLMKLIEP_per_feat('legal')  # Precision: 0.222645099905 Recall: 0.27144 F1: 0.244633104418
     # construct_LMfeatVec('legal', parse=False)
+    # construct_LMfeatVec('software', parse=False)
     # experiment_LMKLIEP('legal')  # Precision: 0.21700076066 Recall: 0.38798 F1: 0.278329363827
+    # experiment_LMKLIEP('software') # Precision: 0.107654415738 Recall: 0.54986 F1: 0.180056453884
+    # experiment_LMSVM('legal')  # Precision: 0.0771818727491 Recall: 0.51434 F1: 0.134222338205
+    experiment_LMSVM('software')
