@@ -47,15 +47,25 @@ class IntelligentSelection(object):
         return -99999, score_per_each
       return 99999, score_per_each
 
+    sent_length = 1
+    if self.is_length_normalized :
+      sent_length = len(termpos)
+
     if self.is_unigram:
       for t,p in termpos:
-        sc_term_in += -np.log(IN.Term_Freq[t]/IN.N_Term)
-        sc_pos_in+= -np.log(IN.TPOS_Freq[(t,p)]/IN.N_Term)
-        sc_pos_in_only += -np.log(IN.POS_Freq[p]/IN.N_Term)
+        pt = IN.Term_Freq[t]/IN.N_Term
+        sc_term_in += -np.log(pt)
+        ptp = IN.TPOS_Freq[(t,p)]/IN.N_Term
+        sc_pos_in+= -np.log(ptp)
+        pp = IN.POS_Freq[p]/IN.N_Term
+        sc_pos_in_only += -np.log(pp)
         if MIX!=None and self.dual_score:
-          sc_term_mix += -np.log(MIX.Term_Freq[t]/MIX.N_Term)
-          sc_pos_mix+= -np.log(MIX.TPOS_Freq[(t,p)]/MIX.N_Term)
-          sc_pos_mix_only += -np.log(MIX.POS_Freq[p]/MIX.N_Term)
+          mpt = MIX.Term_Freq[t]/MIX.N_Term
+          sc_term_mix += -np.log(mpt)
+          mptp = MIX.TPOS_Freq[(t,p)]/MIX.N_Term
+          sc_pos_mix+= -np.log(mptp)
+          mpp = MIX.POS_Freq[p]/MIX.N_Term
+          sc_pos_mix_only += -np.log(mpp)
 
     if self.is_translation:
       for t,p in tr_termpos:
@@ -97,11 +107,11 @@ class IntelligentSelection(object):
       sc_pos_mix_only += sc_bi_pos_mix_only
     if self.include_pos and self.include_pos_only:
       # return ((sc_term_in+sc_pos_in)-(sc_term_mix+sc_pos_mix))/len(termpos)
-      return (sc_term_in+sc_pos_in+sc_pos_in_only+sc_tr_term_in)-(sc_term_mix+sc_pos_mix+sc_pos_mix_only+sc_tr_term_mix), score_per_each
+      return ((sc_term_in+sc_pos_in+sc_pos_in_only+sc_tr_term_in)-(sc_term_mix+sc_pos_mix+sc_pos_mix_only+sc_tr_term_mix))/sent_length, score_per_each
     elif self.include_pos:
-      return (sc_term_in+sc_pos_in+sc_tr_term_in)-(sc_term_mix+sc_pos_mix+sc_tr_term_mix), score_per_each
+      return ((sc_term_in+sc_pos_in+sc_tr_term_in)-(sc_term_mix+sc_pos_mix+sc_tr_term_mix))/sent_length, score_per_each
     # return (sc_term_in-sc_term_mix)/len(termpos)
-    return (sc_term_in+sc_tr_term_in)-(sc_term_mix+sc_tr_term_mix), score_per_each
+    return ((sc_term_in+sc_tr_term_in)-(sc_term_mix+sc_tr_term_mix))/sent_length, score_per_each
 
   def ratio_score(self,termpos, find_threshold=False, is_bigram = True):
   #score based on difference of cross entropy
@@ -164,6 +174,7 @@ class IntelligentSelection(object):
     self.log('is update : '+str(is_update))
     self.log('retrieve per iteration : '+str(retrieve_per_iteration))
     self.log('number of iteration : '+str(n_iteration))
+    self.log('is length normalized : '+str(self.is_length_normalized))
     label = range(450000,500000)
     scoring_function = self.entropy_score
     if threshold!=None and not is_update:
@@ -344,8 +355,8 @@ class IntelligentSelection(object):
       with open(path, 'rb') as handle:
         self.Mix_Docs = pickle.load(handle)
       self.log('number of docs loaded : '+str(len(self.Mix_Docs)))
-    if translation_path !=None:
-      self.log('loading translation data '+path)
+    if translation_path !=None and self.is_translation:
+      self.log('loading translation data '+translation_path)
       with open(translation_path, 'rb') as handle:
         self.Mix_Docs_Translation = pickle.load(handle)
         self.log('number of translation docs loaded : '+str(len(self.Mix_Docs_Translation)))
@@ -378,7 +389,8 @@ if __name__ == '__main__':
   IS.dual_score = True
   IS.is_unigram = True
   IS.is_bigram = False
-  IS.is_translation = True
+  IS.is_translation = False
+  IS.is_length_normalized = True
 
   # IS.log('run with threshold = '+str(th))
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
@@ -401,14 +413,14 @@ if __name__ == '__main__':
 
   # IS.parse_mix_doc('project3_data_selection/legal.dev.en')
   # th = IS.findThreshold()
-  IS.parse_mix_doc('project3_data_selection/out.mixed.legal.es')
-  IS.save(translation_path='mix_doc_translation.pickle')
+  # IS.parse_mix_doc('project3_data_selection/out.mixed.legal.es')
+  # IS.save(translation_path='mix_doc_translation.pickle')
 
   # th=IS.findThreshold()
   IS.load('mix_doc.pickle','mix_doc_translation.pickle')
   # IS.load('software_mix_doc.pickle')
   # IS.select(threshold = -20, is_update=True, retrieve_per_iteration=None, n_iteration=5)
-  IS.select(-1.0)
+  IS.select(0.0)
   # label = range(2000)
   label = range(450000,500000)
   m = IS.measure(label)
